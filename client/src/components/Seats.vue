@@ -1,9 +1,9 @@
 <script setup lang="ts">
+import type { Ref } from 'vue'
 import SeatRow from '@/components/SeatRow.vue'
 import { onMounted, ref } from 'vue'
 import { SocketClient } from '@/socket_client'
-import Seats from "@/components/Seats.vue";
-import {seats_in_row} from "@/monkey";
+import { seats_in_row } from '@/monkey'
 
 const ROW_COUNT = 7
 const rowsRef = ref<SeatRow[]>([])
@@ -59,6 +59,11 @@ function on_client_connected(client: SocketClient) {
   })
 }
 
+interface Props {
+  client_future: Promise<SocketClient>,
+}
+const props = defineProps<Props>()
+
 defineExpose({
   on_client_connected,
 })
@@ -68,7 +73,10 @@ defineExpose({
   <div class="seats-background"></div>
   <div class="front-board"></div>
   <div class="seats">
-    <SeatRow v-for="id in ROW_COUNT" :row="id - 1" :key="id - 1" ref="rowsRef" />
+    <SeatRow v-for = "id in ROW_COUNT"
+             :row = "id - 1"
+             :key = "id - 1" ref="rowsRef"
+             :client_future = "client_future" />
   </div>
 </template>
 

@@ -1,13 +1,18 @@
 <script setup lang="ts">
-  import Monkey from "@/components/Monkey.vue"
   import type { MonkeyData } from '@/monkey'
+  import type { Ref } from 'vue'
+  import Monkey from "@/components/Monkey.vue"
   import { reactive } from 'vue'
   import { create_monkey } from '@/monkey'
+  import { SocketClient } from '@/socket_client'
+
+  interface Props {
+    row: number,
+    client_future: Promise<SocketClient>,
+  }
 
   const monkeys = reactive<MonkeyData[]>([])
-  const props = defineProps({
-    row: { type: Number, required: true },
-  })
+  const props = defineProps<Props>()
 
   function add_monkey(seat: number, your_token?: string) {
     monkeys.push(create_monkey(props.row, seat, your_token))
@@ -36,7 +41,10 @@
 </script>
 
 <template>
-  <Monkey v-for="monkey in monkeys" :key="monkey.x_offset" :monkey="monkey" />
+  <Monkey v-for="monkey in monkeys"
+          :key="monkey.x_offset"
+          :monkey="monkey"
+          :client_future="client_future" />
   <img :src="`/cinema/seats/${row + 1}.png`" class="seats-row" alt="seat" />
 </template>
 

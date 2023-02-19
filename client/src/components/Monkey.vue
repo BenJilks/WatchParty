@@ -1,9 +1,12 @@
 <script setup lang="ts">
-  import type { MonkeyData } from '@/monkey';
-  import { reactive } from 'vue';
+  import type { MonkeyData } from '@/monkey'
+  import type { Ref } from 'vue'
+  import { SocketClient } from "@/socket_client"
+  import { reactive } from 'vue'
 
   interface Props {
     monkey: MonkeyData,
+    client_future: Promise<SocketClient>,
   }
 
   enum Sprite {
@@ -21,15 +24,22 @@
     return key === ' '
   }
 
+  async function changeSpriteState(new_sprite: Sprite) {
+    sprite.name = new_sprite
+
+    const client = await props.client_future
+    // TODO: Send clap message to server
+  }
+
   function clapDown() {
-    sprite.name = Sprite.Ready
+    changeSpriteState(Sprite.Ready)
   }
 
   function clapUp() {
-    sprite.name = Sprite.Clap
+    changeSpriteState(Sprite.Clap)
 
     setTimeout(() => {
-      sprite.name = Sprite.Idle
+      changeSpriteState(Sprite.Idle)
     }, 100)
   }
 
