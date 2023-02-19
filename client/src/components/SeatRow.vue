@@ -2,22 +2,36 @@
   import Monkey from "@/components/Monkey.vue"
   import type { MonkeyData } from '@/monkey'
   import { reactive } from 'vue'
-  import { create_monkey, seats_in_row } from '@/monkey'
+  import { create_monkey } from '@/monkey'
 
   const monkeys = reactive<MonkeyData[]>([])
   const props = defineProps({
     row: { type: Number, required: true },
   })
 
-  function add_monkey() {
-    const max_seats = seats_in_row(props.row)
-    const seat = Math.trunc(Math.random() * max_seats)
+  function add_monkey(seat: number) {
     monkeys.push(create_monkey(props.row, seat))
     console.log(`Create new monkey at row ${ props.row } in seat ${ seat }`)
   }
 
+  function remove_monkey(seat: number) {
+    const index = monkeys.findIndex(data => data.seat == seat)
+    if (index < 0)
+      return
+
+    monkeys.splice(index)
+    console.log(`Removed monkey at row ${ props.row } in seat ${ seat }`)
+  }
+
+  function is_seat_empty(seat: number): boolean {
+    return monkeys.findIndex(data => data.seat == seat) == -1
+  }
+
   defineExpose({
     add_monkey,
+    remove_monkey,
+    is_seat_empty,
+    row: () => props.row,
   })
 </script>
 

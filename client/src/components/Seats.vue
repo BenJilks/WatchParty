@@ -1,16 +1,61 @@
 <script setup lang="ts">
 import SeatRow from '@/components/SeatRow.vue'
-import { onMounted, ref } from "vue";
+import { onMounted, ref } from 'vue'
+import { SocketClient } from '@/socket_client'
+import Seats from "@/components/Seats.vue";
+import {seats_in_row} from "@/monkey";
 
 const ROW_COUNT = 6
-
 const rowsRef = ref<SeatRow[]>([])
-onMounted(() => {
-  const rowIndex = Math.trunc(Math.random() * ROW_COUNT)
-  const row = rowsRef.value[rowIndex]
-  row.add_monkey()
-})
 
+type Seat = {
+  row: number,
+  column: number
+}
+
+type MessageStateUpdate = {
+  seats_not_free: Seat[],
+}
+
+function update_seat(update: MessageStateUpdate, row: SeatRow, seat: number) {
+  const should_have_monkey = update.seats_not_free.findIndex(x =>
+      x.row == row.row() && x.column == seat) != -1
+  const has_monkey = !row.is_seat_empty(seat)
+
+  if (should_have_monkey && !has_monkey) {
+    row.add_monkey(seat)
+  } else if (!should_have_monkey && has_monkey) {
+    row.remove_monkey(seat)
+  }
+}
+
+function scan_seats_for_changes(update: MessageStateUpdate) {
+  for (let rowIndex = 0; rowIndex < ROW_COUNT; rowIndex++) {
+    const row: SeatRow = rowsRef.value[rowIndex]
+    const seats_for_row = seats_in_row(rowIndex)
+
+    for (let seat = 0; seat < seats_for_row; seat++) {
+      update_seat(update, row, seat)
+    }
+  }
+}
+
+function on_client_connected(client: SocketClient) {
+  if (rowsRef.value.length == 0) {
+    console.log('Waiting for rows to be loaded')
+    onMounted(() => on_client_connected(client))
+    return
+  }
+
+  console.log('Listening for state changes')
+  client.on('update-state', (update: MessageStateUpdate) => {
+    scan_seats_for_changes(update)
+  })
+}
+
+defineExpose({
+  on_client_connected,
+})
 </script>
 
 <template>

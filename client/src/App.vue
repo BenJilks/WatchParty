@@ -1,19 +1,31 @@
 <script setup lang="ts">
-import Seats from "@/components/Seats.vue";
-import Stage from "@/components/Stage.vue";
+import Seats from '@/components/Seats.vue'
+import Stage from '@/components/Stage.vue'
+import { open_socket_client, SocketClient } from '@/socket_client'
+import {onMounted, ref} from "vue"
 
-import { open_socket_client, SocketClient } from "@/socket_client";
-import { ref } from "vue";
+const client_ref = ref<SocketClient>()
+const seats_ref = ref<Seats>()
 
-const client = ref<SocketClient>();
-if (client.value === undefined) {
+function onSocketConnected(client: SocketClient) {
+  client_ref.value = client
+
+  const seats = seats_ref.value
+  if (seats == undefined) {
+    onMounted(() => onSocketConnected(client))
+  } else {
+    seats.on_client_connected(client)
+  }
+}
+
+if (client_ref.value === undefined) {
   open_socket_client().then(new_client => {
     console.log('Connected to web socket server')
-    client.value = new_client
+    onSocketConnected(new_client)
   })
-  .catch(error => {
-    console.log(`Failed to connect to web socket server: ${error}`)
-  })
+  // .catch(error => {
+  //   console.log(`Failed to connect to web socket server: ${error}`)
+  // })
 }
 </script>
 
@@ -26,7 +38,7 @@ if (client.value === undefined) {
     !-->
     <img src="/test.png" class="screen" alt="" />
     <Stage />
-    <Seats />
+    <Seats ref="seats_ref" />
   </div>
 </template>
 

@@ -1,5 +1,6 @@
 
 export type MonkeyData = {
+    seat: number,
     bottom: number,
     height: number,
     x_offset: number,
@@ -34,6 +35,7 @@ export function seats_in_row(row: number): number {
 export function create_monkey(row: number, seat: number): MonkeyData {
     const { bottom, height, seat_offsets } = monkey_seat_data_table[row]
     return {
+        seat: seat,
         bottom: bottom,
         height: height,
         x_offset: seat_offsets[seat],

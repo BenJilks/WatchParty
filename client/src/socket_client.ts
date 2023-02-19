@@ -15,31 +15,30 @@ export class SocketClient {
         this.listener_id_to_type_map = new Map()
         this.start_message_listener()
     }
-
     private start_message_listener() {
         this.socket.addEventListener('message', event => {
-            const data = JSON.parse(event.data)
-            if (!('type' in data))
+            console.log(`Got message ${ event.data }`)
+
+            const message = JSON.parse(event.data)
+            if (!('type' in message))
                 return
 
-            const listeners = this.message_listeners.get(data.type)
+            const listeners = this.message_listeners.get(message.type)
             if (listeners === undefined)
                 return
 
             for (const listener of listeners.values())
-                listener(data)
+                listener(message.data)
         })
     }
-
     private generateID(): number {
         for (;;) {
-            const id = crypto.randomInt(Number.MAX_VALUE)
+            const id = Math.random() * Number.MAX_VALUE
             if (!this.listener_id_to_type_map.has(id)) {
                 return id
             }
         }
     }
-
     public on<T extends object>(type: string, callback: (t: T) => void): number {
         const id = this.generateID()
 
@@ -53,7 +52,6 @@ export class SocketClient {
 
         return id
     }
-
     public off(id: number) {
         const type = this.listener_id_to_type_map.get(id)
         if (type === undefined)
@@ -79,11 +77,11 @@ export function open_socket_client(): Promise<SocketClient> {
         const address = `${ document.domain }:${ window.location.port }/socket`
         const socket = new WebSocket(`wss://${ address }`)
 
-        socket.onopen = () => resolve(new SocketClient(socket))
+        socket.onopen = () => { resolve(new SocketClient(socket)) }
         socket.onerror = () => {
             const socket = new WebSocket(`ws://${ address }`)
-            socket.onopen = () => resolve(new SocketClient(socket))
-            socket.onerror = error => reject(error)
+            socket.onopen = () => { resolve(new SocketClient(socket)) }
+            socket.onerror = error => { reject(error) }
         }
 
         setTimeout(() => {
