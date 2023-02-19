@@ -1,20 +1,24 @@
 <script setup lang="ts">
   import Monkey from "@/components/Monkey.vue"
-  import { create_monkey, seats_in_row } from '@/monkey'
   import type { MonkeyData } from '@/monkey'
+  import { reactive } from 'vue'
+  import { create_monkey, seats_in_row } from '@/monkey'
 
+  const monkeys = reactive<MonkeyData[]>([])
   const props = defineProps({
     row: { type: Number, required: true },
   })
 
-  const monkeys: MonkeyData[] = [];
-  const seats_in_this_row = seats_in_row(props.row)
-  for (let i = 0; i < seats_in_this_row; i++) {
-    if (Math.random() > 0.7) {
-      const monkey = create_monkey(props.row, i)
-      monkeys.push(monkey)
-    }
+  function add_monkey() {
+    const max_seats = seats_in_row(props.row)
+    const seat = Math.trunc(Math.random() * max_seats)
+    monkeys.push(create_monkey(props.row, seat))
+    console.log(`Create new monkey at row ${ props.row } in seat ${ seat }`)
   }
+
+  defineExpose({
+    add_monkey,
+  })
 </script>
 
 <template>

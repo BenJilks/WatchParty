@@ -1,6 +1,20 @@
 <script setup lang="ts">
 import Seats from "@/components/Seats.vue";
 import Stage from "@/components/Stage.vue";
+
+import { open_socket_client, SocketClient } from "@/socket_client";
+import { ref } from "vue";
+
+const client = ref<SocketClient>();
+if (client.value === undefined) {
+  open_socket_client().then(new_client => {
+    console.log('Connected to web socket server')
+    client.value = new_client
+  })
+  .catch(error => {
+    console.log(`Failed to connect to web socket server: ${error}`)
+  })
+}
 </script>
 
 <template>
@@ -17,8 +31,6 @@ import Stage from "@/components/Stage.vue";
 </template>
 
 <style scoped>
-  @import 'assets/main.css';
-
   .background {
     position: fixed;
     width: 100%;

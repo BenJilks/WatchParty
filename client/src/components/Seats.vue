@@ -1,18 +1,23 @@
 <script setup lang="ts">
-import SeatRow from "@/components/SeatRow.vue";
+import SeatRow from '@/components/SeatRow.vue'
+import { onMounted, ref } from "vue";
+
+const ROW_COUNT = 6
+
+const rowsRef = ref<SeatRow[]>([])
+onMounted(() => {
+  const rowIndex = Math.trunc(Math.random() * ROW_COUNT)
+  const row = rowsRef.value[rowIndex]
+  row.add_monkey()
+})
+
 </script>
 
 <template>
   <div class="seats-background"></div>
   <div class="front-board"></div>
   <div class="seats">
-    <SeatRow :row=0 />
-    <SeatRow :row=1 />
-    <SeatRow :row=2 />
-    <SeatRow :row=3 />
-    <SeatRow :row=4 />
-    <SeatRow :row=5 />
-    <SeatRow :row=6 />
+    <SeatRow v-for="id in ROW_COUNT" :row="id" :key="id" ref="rowsRef" />
   </div>
 </template>
 
