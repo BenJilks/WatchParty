@@ -5,7 +5,7 @@ import { SocketClient } from '@/socket_client'
 import Seats from "@/components/Seats.vue";
 import {seats_in_row} from "@/monkey";
 
-const ROW_COUNT = 6
+const ROW_COUNT = 7
 const rowsRef = ref<SeatRow[]>([])
 
 type Seat = {
@@ -15,6 +15,8 @@ type Seat = {
 
 type MessageStateUpdate = {
   seats_not_free: Seat[],
+  your_token: string,
+  your_seat: Seat,
 }
 
 function update_seat(update: MessageStateUpdate, row: SeatRow, seat: number) {
@@ -22,8 +24,12 @@ function update_seat(update: MessageStateUpdate, row: SeatRow, seat: number) {
       x.row == row.row() && x.column == seat) != -1
   const has_monkey = !row.is_seat_empty(seat)
 
+  const is_your_monkey = update.your_seat.row == row.row()
+      && update.your_seat.column == seat
+  const your_token = is_your_monkey ? update.your_token : undefined
+
   if (should_have_monkey && !has_monkey) {
-    row.add_monkey(seat)
+    row.add_monkey(seat, your_token)
   } else if (!should_have_monkey && has_monkey) {
     row.remove_monkey(seat)
   }
@@ -62,7 +68,7 @@ defineExpose({
   <div class="seats-background"></div>
   <div class="front-board"></div>
   <div class="seats">
-    <SeatRow v-for="id in ROW_COUNT" :row="id" :key="id" ref="rowsRef" />
+    <SeatRow v-for="id in ROW_COUNT" :row="id - 1" :key="id - 1" ref="rowsRef" />
   </div>
 </template>
 

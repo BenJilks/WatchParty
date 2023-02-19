@@ -9,8 +9,8 @@
     row: { type: Number, required: true },
   })
 
-  function add_monkey(seat: number) {
-    monkeys.push(create_monkey(props.row, seat))
+  function add_monkey(seat: number, your_token?: string) {
+    monkeys.push(create_monkey(props.row, seat, your_token))
     console.log(`Create new monkey at row ${ props.row } in seat ${ seat }`)
   }
 

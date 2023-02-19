@@ -6,25 +6,39 @@
     monkey: MonkeyData,
   }
 
+  enum Sprite {
+    Idle = 'idle',
+    Ready = 'clap_ready',
+    Clap = 'clap',
+  }
+
   const props = defineProps<Props>()
-  const sprite = reactive({ name: "idle" })
+  const sprite = reactive({ name: Sprite.Idle })
 
-  function startClap() {
-    sprite.name = 'clap_ready'
-    setTimeout(clap, 100)
+  function isSpace(event: Event): boolean {
+    let keyboard_event = event as KeyboardEvent
+    let key = keyboard_event.key
+    return key === ' '
   }
 
-  function clap() {
-    sprite.name = 'clap'
-    setTimeout(endClap, 100)
+  function clapDown() {
+    sprite.name = Sprite.Ready
   }
 
-  function endClap() {
-    sprite.name = 'idle'
-    setTimeout(startClap, Math.random() * 1000)
+  function clapUp() {
+    sprite.name = Sprite.Clap
+
+    setTimeout(() => {
+      sprite.name = Sprite.Idle
+    }, 100)
   }
 
-  setTimeout(startClap, Math.random() * 1000)
+  if (props.monkey.your_token !== undefined) {
+    window.addEventListener('keydown', event =>
+        isSpace(event) && clapDown())
+    window.addEventListener('keyup', event =>
+        isSpace(event) && clapUp())
+  }
 </script>
 
 <template>

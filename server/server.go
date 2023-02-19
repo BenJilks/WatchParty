@@ -17,7 +17,7 @@ const (
 type ServerMessage struct {
     Type   ServerMessageType
     Client *Client
-    Token  string
+    Token  *string
 }
 
 type Server struct {
@@ -26,13 +26,11 @@ type Server struct {
 }
 
 func (server *Server) broadcast() {
-    message := Message{
-        Type: MessageUpdateState,
-        Data: server.stage.UpdateMessage(),
-    }
-
     for _, client := range server.connectedClients {
-        _ = client.Send(message)
+        _ = client.Send(Message{
+            Type: MessageUpdateState,
+            Data: server.stage.UpdateMessage(client.Token),
+        })
     }
 }
 
@@ -56,10 +54,10 @@ func (server *Server) join(client *Client) {
     token := server.generateNewToken()
     fmt.Printf("Joining watch party with token '%s'\n", token)
 
+    client.Token = &token
     server.connectedClients[token] = client
     server.stage.PlaceViewer(token)
     server.broadcast()
-    client.Token = &token
 }
 
 func (server *Server) leave(token string) {
@@ -78,7 +76,7 @@ func (server *Server) handleMessage(message ServerMessage) {
     case ServerMessageJoin:
         server.join(message.Client)
     case ServerMessageLeave:
-        server.leave(message.Token)
+        server.leave(*message.Token)
     case ServerMessageBroadcast:
         server.broadcast()
     default:

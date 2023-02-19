@@ -12,13 +12,14 @@ func handleClient(client Client, serverMessage chan<- ServerMessage) {
             serverMessage <- ServerMessage{
                 Type:   ServerMessageBroadcast,
                 Client: &client,
+                Token:  client.Token,
             }
 
         case MessageDisconnect:
             if client.Token != nil {
                 serverMessage <- ServerMessage{
                     Type:  ServerMessageLeave,
-                    Token: *client.Token,
+                    Token: client.Token,
                 }
             }
             return

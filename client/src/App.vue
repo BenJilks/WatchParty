@@ -23,9 +23,9 @@ if (client_ref.value === undefined) {
     console.log('Connected to web socket server')
     onSocketConnected(new_client)
   })
-  // .catch(error => {
-  //   console.log(`Failed to connect to web socket server: ${error}`)
-  // })
+  .catch(error => {
+    console.log(`Failed to connect to web socket server: ${error}`)
+  })
 }
 </script>
 

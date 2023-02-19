@@ -15,17 +15,25 @@ type Stage struct {
 }
 
 type StageUpdateMessage struct {
-    SeatsNotFree []Seat `json:"seats_not_free"`
+    SeatsNotFree []Seat  `json:"seats_not_free"`
+    YourToken    *string `json:"your_token"`
+    YourSeat     Seat    `json:"your_seat"`
 }
 
-func (stage *Stage) UpdateMessage() StageUpdateMessage {
+func (stage *Stage) UpdateMessage(yourToken *string) StageUpdateMessage {
     var seatsNotFree []Seat
-    for _, seat := range stage.seatsUsed {
+    var yourSeat Seat
+    for token, seat := range stage.seatsUsed {
         seatsNotFree = append(seatsNotFree, seat)
+        if yourToken != nil && token == *yourToken {
+            yourSeat = seat
+        }
     }
 
     return StageUpdateMessage{
         SeatsNotFree: seatsNotFree,
+        YourToken:    yourToken,
+        YourSeat:     yourSeat,
     }
 }
 
