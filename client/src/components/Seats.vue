@@ -1,0 +1,54 @@
+<script setup lang="ts">
+import SeatRow from "@/components/SeatRow.vue";
+</script>
+
+<template>
+  <div class="seats-background"></div>
+  <div class="front-board"></div>
+  <div class="seats">
+    <SeatRow :row=0 />
+    <SeatRow :row=1 />
+    <SeatRow :row=2 />
+    <SeatRow :row=3 />
+    <SeatRow :row=4 />
+    <SeatRow :row=5 />
+    <SeatRow :row=6 />
+  </div>
+</template>
+
+<style scoped>
+  .front-board {
+    position: absolute;
+    user-select: none;
+    pointer-events: none;
+
+    width: 100%;
+    height: var(--front-board-height);
+
+    bottom: calc(var(--seat-height) - var(--front-board-height));
+    background: linear-gradient(0deg,
+    #0B0B0BFF 0%,
+    #181616FF 100%);
+  }
+
+  .seats-background {
+    position: absolute;
+    user-select: none;
+    pointer-events: none;
+
+    width: 100%;
+    height: var(--seat-height);
+    bottom: 0;
+
+    background-color: black;
+  }
+
+  .seats {
+    position: absolute;
+    width: 100%;
+    height: var(--seat-height);
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+</style>

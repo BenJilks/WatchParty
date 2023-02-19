@@ -1,0 +1,11 @@
+* {
+    --seat-height: 20vh;
+    --floor-height: 23vh;
+    --curtain-offset: -3vh;
+    --front-board-height: 6vh;
+}
+
+img {
+    user-select: none;
+    pointer-events: none;
+}
