@@ -1,4 +1,3 @@
-import * as crypto from 'crypto';
 
 export interface Message {
     type: string,
@@ -27,8 +26,9 @@ export class SocketClient {
             if (listeners === undefined)
                 return
 
+            const data = JSON.parse(atob(message.data))
             for (const listener of listeners.values())
-                listener(message.data)
+                listener(data)
         })
     }
     private generateID(): number {
@@ -65,9 +65,11 @@ export class SocketClient {
         listeners.delete(id)
     }
 
-    public send<T extends Message>(type: string, message: T) {
-        message.type = type
-        this.socket.send(JSON.stringify(message))
+    public send<T>(type: string, message: T) {
+        this.socket.send(JSON.stringify({
+            type: type,
+            data: btoa(JSON.stringify(message)),
+        }))
     }
 
 }

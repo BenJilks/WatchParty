@@ -1,11 +1,11 @@
 <script setup lang="ts">
-  import type { MonkeyData } from '@/monkey'
-  import type { Ref } from 'vue'
+import type {ClapMessage, ClapResponseMessage, MonkeyData} from '@/monkey'
   import { SocketClient } from "@/socket_client"
   import { reactive } from 'vue'
 
   interface Props {
     monkey: MonkeyData,
+    row: number,
     client_future: Promise<SocketClient>,
   }
 
@@ -28,7 +28,10 @@
     sprite.name = new_sprite
 
     const client = await props.client_future
-    // TODO: Send clap message to server
+    client.send<ClapMessage>('clap', {
+      sprite: new_sprite,
+      token: props.monkey.your_token ?? '',
+    })
   }
 
   function clapDown() {
@@ -37,18 +40,26 @@
 
   function clapUp() {
     changeSpriteState(Sprite.Clap)
-
     setTimeout(() => {
       changeSpriteState(Sprite.Idle)
     }, 100)
   }
 
-  if (props.monkey.your_token !== undefined) {
+  if (props.monkey.your_token != undefined) {
     window.addEventListener('keydown', event =>
         isSpace(event) && clapDown())
     window.addEventListener('keyup', event =>
         isSpace(event) && clapUp())
   }
+
+  props.client_future.then(client => {
+    client.on<ClapResponseMessage>('clap', message => {
+      if (message.row != props.row || message.column != props.monkey.seat) {
+        return
+      }
+      sprite.name = message.sprite as Sprite
+    })
+  })
 </script>
 
 <template>

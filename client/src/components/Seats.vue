@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import type { Ref } from 'vue'
 import SeatRow from '@/components/SeatRow.vue'
 import { onMounted, ref } from 'vue'
 import { SocketClient } from '@/socket_client'

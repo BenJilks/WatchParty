@@ -47,6 +47,15 @@ func (stage *Stage) PlayerInSeat(seat Seat) *string {
     return nil
 }
 
+func (stage *Stage) SeatForPlayer(token string) *Seat {
+    seat, found := stage.seatsUsed[token]
+    if !found {
+        return nil
+    }
+
+    return &seat
+}
+
 func (stage *Stage) PlaceViewer(token string) {
     for {
         row := rand.Intn(len(RowSeatCount))

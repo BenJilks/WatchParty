@@ -2,6 +2,7 @@ package main
 
 const (
     MessageUpdateState = MessageType("update-state")
+    MessageClap        = MessageType("clap")
     MessageDisconnect  = MessageType("disconnect")
 )
 

@@ -12,12 +12,14 @@ const (
     ServerMessageBroadcast = ServerMessageType(iota)
     ServerMessageJoin
     ServerMessageLeave
+    ServerMessageClap
 )
 
 type ServerMessage struct {
     Type   ServerMessageType
     Client *Client
     Token  *string
+    Sprite string
 }
 
 type Server struct {
@@ -27,10 +29,8 @@ type Server struct {
 
 func (server *Server) broadcast() {
     for _, client := range server.connectedClients {
-        _ = client.Send(Message{
-            Type: MessageUpdateState,
-            Data: server.stage.UpdateMessage(client.Token),
-        })
+        _ = client.Send(MessageUpdateState,
+            server.stage.UpdateMessage(client.Token))
     }
 }
 
@@ -71,6 +71,32 @@ func (server *Server) leave(token string) {
     server.broadcast()
 }
 
+type ClapResponseMessage struct {
+    Sprite string `json:"sprite"`
+    Row    int    `json:"row"`
+    Column int    `json:"column"`
+}
+
+func (server *Server) clap(token string, sprite string) {
+    seat := server.stage.SeatForPlayer(token)
+    if seat == nil {
+        return
+    }
+
+    message := ClapResponseMessage{
+        Sprite: sprite,
+        Row:    seat.Row,
+        Column: seat.Column,
+    }
+
+    for player, client := range server.connectedClients {
+        if player == token {
+            continue
+        }
+        _ = client.Send(MessageClap, message)
+    }
+}
+
 func (server *Server) handleMessage(message ServerMessage) {
     switch message.Type {
     case ServerMessageJoin:
@@ -79,6 +105,8 @@ func (server *Server) handleMessage(message ServerMessage) {
         server.leave(*message.Token)
     case ServerMessageBroadcast:
         server.broadcast()
+    case ServerMessageClap:
+        server.clap(*message.Token, message.Sprite)
     default:
         panic(message)
     }

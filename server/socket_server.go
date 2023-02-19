@@ -13,7 +13,7 @@ type MessageType string
 
 type Message struct {
     Type MessageType `json:"type"`
-    Data interface{} `json:"data"`
+    Data []byte      `json:"data"`
 }
 
 type Client struct {
@@ -23,8 +23,17 @@ type Client struct {
     Token      *string
 }
 
-func (client *Client) Send(message Message) error {
-    messageJson, err := json.Marshal(message)
+func (client *Client) Send(messageType MessageType, data interface{}) error {
+    dataJson, err := json.Marshal(data)
+    if err != nil {
+        return err
+    }
+
+    messageJson, err := json.Marshal(Message{
+        Type: messageType,
+        Data: dataJson,
+    })
+
     if err != nil {
         return err
     }

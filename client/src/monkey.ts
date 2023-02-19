@@ -7,6 +7,17 @@ export type MonkeyData = {
     your_token?: string,
 }
 
+export type ClapMessage = {
+    sprite: string,
+    token: string,
+}
+
+export type ClapResponseMessage = {
+    sprite: string,
+    row: number,
+    column: number,
+}
+
 const monkey_seat_data_table = [
     { bottom: 14, height: 7, seat_offsets:
             [-45, -39.5, -34, -28, -23, -17.5, -12, -6, -1, 5, 11, 16.5, 22, 33, 38.5, 44] },

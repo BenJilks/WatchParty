@@ -1,6 +1,5 @@
 <script setup lang="ts">
   import type { MonkeyData } from '@/monkey'
-  import type { Ref } from 'vue'
   import Monkey from "@/components/Monkey.vue"
   import { reactive } from 'vue'
   import { create_monkey } from '@/monkey'
@@ -44,6 +43,7 @@
   <Monkey v-for="monkey in monkeys"
           :key="monkey.x_offset"
           :monkey="monkey"
+          :row="row"
           :client_future="client_future" />
   <img :src="`/cinema/seats/${row + 1}.png`" class="seats-row" alt="seat" />
 </template>
