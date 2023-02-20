@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type {ClapMessage, ClapResponseMessage, MonkeyData} from '@/monkey'
+  import type {ClapMessage, ClapResponseMessage, MonkeyData} from '@/monkey'
   import { SocketClient } from "@/socket_client"
   import { reactive } from 'vue'
 

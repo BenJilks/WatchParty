@@ -2,10 +2,13 @@
 import Seats from '@/components/Seats.vue'
 import Stage from '@/components/Stage.vue'
 import { open_socket_client } from '@/socket_client'
-import { onMounted, reactive, ref } from "vue"
+import {computed, onMounted, reactive, ref} from "vue"
+import Controls from "@/components/Controls/Controls.vue";
+
+const seats_ref = ref<Seats>()
+const video_ref = ref<HTMLVideoElement | null>(null)
 
 const client_future = reactive(open_socket_client())
-const seats_ref = ref<Seats>()
 onMounted(async () => {
   try {
     const client = await client_future
@@ -15,19 +18,17 @@ onMounted(async () => {
     console.log(`Failed to connect to web socket server: ${error}`)
   }
 })
-
 </script>
 
 <template>
   <div class="background">
-    <!--
-    <video class="screen">
+    <video ref="video_ref" class="screen" muted>
       <source src="/test.mp4" type="video/mp4">
     </video>
-    !-->
-    <img src="/test.png" class="screen" alt="" />
+
     <Stage />
     <Seats ref="seats_ref" :client_future="client_future" />
+    <Controls :video="computed(() => video_ref)" />
   </div>
 </template>
 
@@ -52,7 +53,7 @@ onMounted(async () => {
     left: 50%;
     transform: translateX(-50%);
 
-    background-color: #bbbf;
+    background-color: #0a0a0aff;
     box-shadow: 0 0 5vh 1vh #fff6;
     border-radius: 0.5vh;
   }

@@ -3,6 +3,8 @@
     --floor-height: 23vh;
     --curtain-offset: -3vh;
     --front-board-height: 6vh;
+
+    box-sizing: border-box;
 }
 
 img {
