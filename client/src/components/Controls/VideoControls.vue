@@ -25,6 +25,7 @@
     progress: 0,
     duration: 1,
     play_pause_icon: 'play',
+    volume_icon: 'volume',
   })
 
   const buffered_segments = reactive<BufferedSegmentData[]>([])
@@ -104,6 +105,16 @@
     })
   }
 
+  function toggle_mute() {
+    const video = props.video.value
+    if (video == null)
+      return
+
+    video.muted = !video.muted
+    data.volume_icon = video.muted
+        ? 'mute' : 'volume'
+  }
+
   function seek(progress: number) {
     const video = props.video.value
     if (video == null)
@@ -176,9 +187,9 @@
 
 <template>
   <img
-      :src="`/icons/${data.play_pause_icon}.svg`"
+      class="icon"
       draggable="false"
-      id="play"
+      :src="`/icons/${data.play_pause_icon}.svg`"
       @click="play_pause" />
 
   <div id="timeline" ref="seek_bar_ref" @mousedown="on_seek_start">
@@ -190,6 +201,12 @@
     <div id="done-timeline"></div>
     <div id="scrubber" @mousedown="on_seek_start"></div>
   </div>
+
+  <img
+      class="icon"
+      draggable="false"
+      :src="`/icons/${data.volume_icon}.svg`"
+      @click="toggle_mute" />
 </template>
 
 <style scoped>
@@ -199,13 +216,14 @@
     --played-color: #333F;
   }
 
-  #play {
+  .icon {
     height: 100%;
     aspect-ratio: 1/1;
+    padding: 0.2em;
+
     cursor: pointer;
     pointer-events: all;
     user-modify: none;
-    padding: 0.2em;
   }
 
   #timeline {
