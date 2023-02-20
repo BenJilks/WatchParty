@@ -16,8 +16,6 @@ export class SocketClient {
     }
     private start_message_listener() {
         this.socket.addEventListener('message', event => {
-            console.log(`Got message ${ event.data }`)
-
             const message = JSON.parse(event.data)
             if (!('type' in message))
                 return
@@ -66,10 +64,14 @@ export class SocketClient {
     }
 
     public send<T>(type: string, message: T) {
-        this.socket.send(JSON.stringify({
-            type: type,
-            data: btoa(JSON.stringify(message)),
-        }))
+        try {
+            this.socket.send(JSON.stringify({
+                type: type,
+                data: btoa(JSON.stringify(message)),
+            }))
+        } catch (error) {
+            console.error(error)
+        }
     }
 
 }

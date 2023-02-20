@@ -53,7 +53,7 @@ function on_client_connected(client: SocketClient) {
   }
 
   console.log('Listening for state changes')
-  client.on('update-state', (update: MessageStateUpdate) => {
+  client.on<MessageStateUpdate>('update-state', (update) => {
     scan_seats_for_changes(update);
   })
 }
@@ -61,12 +61,8 @@ function on_client_connected(client: SocketClient) {
 interface Props {
   client_future: Promise<SocketClient>,
 }
+
 const props = defineProps<Props>()
-
-onMounted(() => {
-  (rowsRef.value[5] as SeatRow).add_monkey(3)
-})
-
 defineExpose({
   on_client_connected,
 })

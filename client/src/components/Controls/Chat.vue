@@ -53,7 +53,7 @@
   input {
     border: none;
     border-radius: 0.7em;
-    padding: 0.6em 0.5em;
+    padding: 0.4em 0.5em;
     width: 15em;
 
     color: black;
@@ -64,6 +64,7 @@
   #send {
     height: 100%;
     aspect-ratio: 1/1;
+    padding: 0.2em;
 
     cursor: pointer;
     pointer-events: all;

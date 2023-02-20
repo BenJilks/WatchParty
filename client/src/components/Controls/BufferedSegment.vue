@@ -5,7 +5,6 @@
   }
 
   const props = defineProps<Props>()
-  const length = props.end - props.start
 </script>
 
 <template>
@@ -20,7 +19,7 @@
   .segment {
     position: absolute;
     left: calc(100% * v-bind('props.start'));
-    width: calc(100% * v-bind('length'));
+    width: calc(100% * v-bind('props.end - props.start'));
     height: 100%;
 
     border-radius: 1em;

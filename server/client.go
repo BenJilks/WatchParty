@@ -11,6 +11,11 @@ type ChatMessage struct {
 	Message string `json:"message"`
 }
 
+type VideoMessage struct {
+	Playing  bool    `json:"playing"`
+	Progress float64 `json:"progress"`
+}
+
 func handleClient(client Client, serverMessage chan<- ServerMessage) {
 	serverMessage <- ServerMessage{
 		Type:   ServerMessageJoin,
@@ -44,6 +49,17 @@ func handleClient(client Client, serverMessage chan<- ServerMessage) {
 				Type:    ServerMessageChat,
 				Token:   client.Token,
 				Message: chatMessage.Message,
+			}
+
+		case MessageVideo:
+			var videoMessage VideoMessage
+			_ = json.Unmarshal(message.Data, &videoMessage)
+
+			serverMessage <- ServerMessage{
+				Type:     ServerMessageVideo,
+				Token:    client.Token,
+				Playing:  videoMessage.Playing,
+				Progress: videoMessage.Progress,
 			}
 
 		case MessageDisconnect:

@@ -4,6 +4,7 @@ const (
 	MessageUpdateState = MessageType("update-state")
 	MessageClap        = MessageType("clap")
 	MessageChat        = MessageType("chat")
+	MessageVideo       = MessageType("video")
 	MessageDisconnect  = MessageType("disconnect")
 )
 

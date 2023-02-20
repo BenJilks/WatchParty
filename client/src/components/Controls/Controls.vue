@@ -19,7 +19,7 @@
     </div>
 
     <div id="video-panel" class="sub-panel">
-      <VideoControls :video="video" />
+      <VideoControls :video="video" :client_future="client_future" />
     </div>
   </div>
 </template>
@@ -36,7 +36,7 @@
     align-items: center;
     gap: 2em;
 
-    height: 4em;
+    height: 3em;
     width: calc(100% - var(--floating-x)*2);
     bottom: var(--floating-y);
     left: var(--floating-x);
@@ -45,10 +45,10 @@
   .sub-panel {
     display: flex;
     align-items: center;
-    gap: 1.5em;
+    gap: 1em;
     height: 100%;
 
-    padding: 1em 2em;
+    padding: 0.5em 1em;
     border-radius: 0.5em;
     background-color: #FFF9;
   }

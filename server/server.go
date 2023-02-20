@@ -14,14 +14,19 @@ const (
 	ServerMessageLeave
 	ServerMessageClap
 	ServerMessageChat
+	ServerMessageVideo
 )
 
 type ServerMessage struct {
-	Type    ServerMessageType
-	Client  *Client
-	Token   *string
-	Sprite  string
+	Type   ServerMessageType
+	Client *Client
+	Token  *string
+	Sprite string
+
 	Message string
+
+	Playing  bool
+	Progress float64
 }
 
 type Server struct {
@@ -122,6 +127,13 @@ func (server *Server) chat(token string, message string) {
 	})
 }
 
+func (server *Server) video(token string, playing bool, progress float64) {
+	server.broadcastExcept(token, MessageVideo, VideoMessage{
+		Playing:  playing,
+		Progress: progress,
+	})
+}
+
 func (server *Server) handleMessage(message ServerMessage) {
 	switch message.Type {
 	case ServerMessageJoin:
@@ -134,6 +146,8 @@ func (server *Server) handleMessage(message ServerMessage) {
 		server.clap(*message.Token, message.Sprite)
 	case ServerMessageChat:
 		server.chat(*message.Token, message.Message)
+	case ServerMessageVideo:
+		server.video(*message.Token, message.Playing, message.Progress)
 	default:
 		panic(message)
 	}

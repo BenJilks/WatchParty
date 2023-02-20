@@ -2,9 +2,11 @@
   import BufferedSegment from '@/components/Controls/BufferedSegment.vue'
   import type { Ref } from 'vue'
   import { computed, reactive, ref, watch } from 'vue'
+  import { SocketClient } from '@/socket_client'
 
   interface Props {
     video: Ref<HTMLVideoElement | null>,
+    client_future: Promise<SocketClient>,
   }
 
   interface BufferedSegmentData {
@@ -12,11 +14,16 @@
     end: number,
   }
 
+  type VideoStateMessage = {
+    playing: boolean,
+    progress: number,
+  }
+
   let is_seeking = false
   const seek_bar_ref = ref<HTMLDivElement | null>(null)
   const data = reactive({
     progress: 0,
-    duration: 0,
+    duration: 1,
     play_pause_icon: 'play',
   })
 
@@ -29,8 +36,8 @@
     }
 
     buffered_segments.push({
-      start: start / data.duration,
-      end: end / data.duration,
+      start: start,
+      end: end,
     })
   }
 
@@ -43,7 +50,7 @@
   const progress_factor = computed(() =>
       data.progress / data.duration)
 
-  watch(props.video, () => {
+  watch(props.video, async () => {
     const video = props.video.value!
     video.preload = 'auto'
     video.addEventListener('durationchange', () =>
@@ -54,10 +61,24 @@
       if (!is_seeking)
         data.progress = video.currentTime
     })
+
+    const client = await props.client_future
+    client.on<VideoStateMessage>('video', message => {
+      data.progress = message.progress
+      video.currentTime = data.progress
+
+      message.playing
+          ? video.play()
+          : video.pause()
+
+      data.play_pause_icon = message.playing
+          ? 'pause'
+          : 'play'
+    })
   })
 
-  function play(video: HTMLVideoElement) {
-    video.play()
+  async function play(video: HTMLVideoElement) {
+    await video.play()
     data.play_pause_icon = 'pause'
   }
 
@@ -66,12 +87,33 @@
     data.play_pause_icon = 'play'
   }
 
-  function play_pause() {
+  async function play_pause() {
     const video = props.video.value
-    if (video != null) {
-      video.paused
-          ? play(video)
-          : pause(video)
+    if (video == null)
+      return
+
+    video.paused
+        ? await play(video)
+        : pause(video)
+    data.progress = video.currentTime
+
+    const client = await props.client_future
+    client.send<VideoStateMessage>('video', {
+      playing: !video.paused,
+      progress: video.currentTime,
+    })
+  }
+
+  function seek(progress: number) {
+    const video = props.video.value
+    if (video == null)
+      return
+
+    if ('fastSeek' in video) {
+      video.fastSeek(progress)
+    } else {
+      // NOTE: Chrome does not have a `fastSeek` function
+      (video as any).currentTime = progress
     }
   }
 
@@ -82,12 +124,29 @@
     is_seeking = true
   }
 
-  window.addEventListener('mouseup', () => {
+  async function send_video_update() {
+    const video = props.video.value
+    if (video == null)
+      return
+
+    const client = await props.client_future
+    client.send<VideoStateMessage>('video', {
+      playing: !video.paused,
+      progress: data.progress,
+    })
+  }
+
+  window.addEventListener('mouseup', async () => {
     if (!is_seeking)
       return
-    if (data.play_pause_icon == 'pause')
-      props.video.value?.play()
     is_seeking = false
+
+    const playing = (data.play_pause_icon == 'pause')
+    if (playing) {
+      await props.video.value?.play()
+    }
+
+    await send_video_update()
   })
 
   window.addEventListener('mousemove', event => {
@@ -111,12 +170,7 @@
       data.progress = data.duration * progress
     }
 
-    if ('fastSeek' in video) {
-      video.fastSeek(data.progress)
-    } else {
-      // NOTE: Chrome does not have a `fastSeek` function
-      (video as any).currentTime = data.progress
-    }
+    seek(data.progress)
   })
 </script>
 
@@ -131,8 +185,8 @@
     <BufferedSegment
         v-for="(segment, i) in buffered_segments"
         :key="i"
-        :start="segment.start"
-        :end="segment.end" />
+        :start="segment.start / data.duration"
+        :end="segment.end / data.duration" />
     <div id="done-timeline"></div>
     <div id="scrubber" @mousedown="on_seek_start"></div>
   </div>
@@ -151,6 +205,7 @@
     cursor: pointer;
     pointer-events: all;
     user-modify: none;
+    padding: 0.2em;
   }
 
   #timeline {

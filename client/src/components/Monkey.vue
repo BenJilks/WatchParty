@@ -157,7 +157,7 @@
 
   .message text {
     display: inline-block;
-    overflow-y: scroll;
+    overflow-y: auto;
 
     font-size: 1.6em;
     word-wrap: break-word;
