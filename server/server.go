@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"time"
 )
 
 type ServerMessageType int
@@ -32,12 +33,30 @@ type ServerMessage struct {
 type Server struct {
 	connectedClients map[string]*Client
 	stage            Stage
+	videoState       VideoState
+}
+
+func (server *Server) updateVideoState() {
+	if !server.videoState.Playing {
+		return
+	}
+
+	timeGone := time.Since(server.videoState.LastProgressUpdate)
+	server.videoState.Progress += timeGone.Seconds()
+	server.videoState.LastProgressUpdate = time.Now()
 }
 
 func (server *Server) broadcast() {
+	server.updateVideoState()
+	videoMessage := VideoMessage{
+		Playing:  server.videoState.Playing,
+		Progress: server.videoState.Progress,
+	}
+
 	for _, client := range server.connectedClients {
 		_ = client.Send(MessageUpdateState,
 			server.stage.UpdateMessage(client.Token))
+		_ = client.Send(MessageVideo, videoMessage)
 	}
 }
 
@@ -128,6 +147,12 @@ func (server *Server) chat(token string, message string) {
 }
 
 func (server *Server) video(token string, playing bool, progress float64) {
+	server.videoState = VideoState{
+		Playing:            playing,
+		Progress:           progress,
+		LastProgressUpdate: time.Now(),
+	}
+
 	server.broadcastExcept(token, MessageVideo, VideoMessage{
 		Playing:  playing,
 		Progress: progress,
@@ -158,6 +183,11 @@ func StartServer(messages <-chan ServerMessage) {
 		connectedClients: map[string]*Client{},
 		stage: Stage{
 			seatsUsed: map[string]Seat{},
+		},
+		videoState: VideoState{
+			Playing:            false,
+			Progress:           0,
+			LastProgressUpdate: time.Now(),
 		},
 	}
 
