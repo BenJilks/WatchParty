@@ -96,14 +96,19 @@ func handleConnection(response http.ResponseWriter, request *http.Request, clien
     http.ServeFile(response, request, filePath)
 }
 
-func StartSocketServer(address string, clients chan<- Client) {
+func StartSocketServer(address string, certFile string, keyFile string, clients chan<- Client) {
+    useTLS := certFile != "" && keyFile != ""
+    fmt.Printf("Server running on '%s', TLS: %t\n", address, useTLS)
+
     handler := http.HandlerFunc(
         func(response http.ResponseWriter, request *http.Request) {
             handleConnection(response, request, clients)
         })
 
-    err := http.ListenAndServe(address, handler)
-    if err != nil {
-        panic(err)
+    if useTLS {
+        _ = http.ListenAndServeTLS(address, certFile, keyFile, handler)
+    } else {
+        _ = http.ListenAndServe(address, handler)
     }
 }
+

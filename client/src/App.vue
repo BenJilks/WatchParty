@@ -22,8 +22,8 @@ onMounted(async () => {
 
 <template>
   <div class="background">
-    <video ref="video_ref" class="screen" muted>
-      <source src="/test.mp4" type="video/mp4">
+    <video ref="video_ref" class="screen">
+      <source src="/test2.mp4" type="video/mp4">
     </video>
 
     <Stage />
