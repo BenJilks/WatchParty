@@ -5,8 +5,8 @@
   <div class="floor"></div>
   <div class="floor-overlay floor-back"></div>
   <div class="floor-overlay floor-sides"></div>
-  <img src="/cinema/curtain_left.png" class="curtain curtain_left" />
-  <img src="/cinema/curtain_right.png" class="curtain curtain_right" />
+  <img src="/cinema/curtain_left.png" class="curtain curtain_left" draggable="false" />
+  <img src="/cinema/curtain_right.png" class="curtain curtain_right" draggable="false" />
 </template>
 
 <style scoped>

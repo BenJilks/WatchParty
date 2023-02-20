@@ -1,0 +1,72 @@
+<script setup lang="ts">
+  import { SocketClient } from '@/socket_client'
+  import { ref } from 'vue'
+
+  interface Props {
+    client_future: Promise<SocketClient>,
+  }
+
+  type MessageChat = {
+    message: string,
+  }
+
+  const input_ref = ref<HTMLInputElement>()
+  const props = defineProps<Props>()
+
+  async function send() {
+    const input = input_ref.value
+    if (input === undefined)
+      return
+
+    const message = input.value.normalize().trim()
+    if (message == '')
+      return
+
+    const client = await props.client_future
+    client.send<MessageChat>('chat', {
+      message: message,
+    })
+
+    input.value = ''
+  }
+
+  function on_input_key(event: KeyboardEvent) {
+    if (event.key == 'Enter') {
+      send()
+    }
+  }
+</script>
+
+<template>
+  <input
+      ref="input_ref"
+      placeholder="Chat messages..."
+      @keydown="on_input_key"/>
+  <img
+      src="/icons/chat.svg"
+      draggable="false"
+      id="send"
+      @click="send" />
+</template>
+
+<style scoped>
+  input {
+    border: none;
+    border-radius: 0.7em;
+    padding: 0.6em 0.5em;
+    width: 15em;
+
+    color: black;
+    background-color: #dddf;
+    outline: none;
+  }
+
+  #send {
+    height: 100%;
+    aspect-ratio: 1/1;
+
+    cursor: pointer;
+    pointer-events: all;
+    user-modify: none;
+  }
+</style>

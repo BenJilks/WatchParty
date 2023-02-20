@@ -40,12 +40,17 @@
 </script>
 
 <template>
-  <Monkey v-for="monkey in monkeys"
-          :key="monkey.x_offset"
-          :monkey="monkey"
-          :row="row"
-          :client_future="client_future" />
-  <img :src="`/cinema/seats/${row + 1}.png`" class="seats-row" alt="seat" />
+  <Monkey
+      v-for="monkey in monkeys"
+      :key="monkey.x_offset"
+      :monkey="monkey"
+      :row="row"
+      :client_future="client_future" />
+  <img
+      :src="`/cinema/seats/${row + 1}.png`"
+      class="seats-row"
+      alt="seat"
+      draggable="false" />
 </template>
 
 <style scoped>
@@ -56,5 +61,6 @@
     bottom: 0;
     left: 50%;
     transform: translateX(-50%);
+    z-index: 0;
   }
 </style>

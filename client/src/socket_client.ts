@@ -77,11 +77,12 @@ export class SocketClient {
 export function open_socket_client(): Promise<SocketClient> {
     return new Promise((resolve, reject) => {
         const address = `${ document.domain }:${ window.location.port }/socket`
-        const socket = new WebSocket(`wss://${ address }`)
+        let socket = new WebSocket(`wss://${ address }`)
 
         socket.onopen = () => { resolve(new SocketClient(socket)) }
         socket.onerror = () => {
-            const socket = new WebSocket(`ws://${ address }`)
+            socket.close()
+            socket = new WebSocket(`ws://${ address }`)
             socket.onopen = () => { resolve(new SocketClient(socket)) }
             socket.onerror = error => { reject(error) }
         }

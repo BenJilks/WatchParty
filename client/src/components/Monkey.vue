@@ -1,12 +1,21 @@
 <script setup lang="ts">
-  import type {ClapMessage, ClapResponseMessage, MonkeyData} from '@/monkey'
+  import type { ClapMessage, ClapResponseMessage, MonkeyData } from '@/monkey'
   import { SocketClient } from "@/socket_client"
   import { reactive } from 'vue'
+
+  const CHAT_MESSAGE_TIME_MS = 2500
+  const CLAP_TIME = 150
 
   interface Props {
     monkey: MonkeyData,
     row: number,
     client_future: Promise<SocketClient>,
+  }
+
+  type ChatResponseMessage = {
+    message: string,
+    row: number,
+    column: number,
   }
 
   enum Sprite {
@@ -17,14 +26,20 @@
 
   const props = defineProps<Props>()
   const sprite = reactive({ name: Sprite.Idle })
+  const chat_message = reactive({
+    message: '',
+    show: false,
+    removed: true,
+    animation_speed: 0.2,
+  })
 
-  function isSpace(event: Event): boolean {
+  function is_space(event: Event): boolean {
     let keyboard_event = event as KeyboardEvent
     let key = keyboard_event.key
     return key === ' '
   }
 
-  async function changeSpriteState(new_sprite: Sprite) {
+  async function change_sprite_state(new_sprite: Sprite) {
     sprite.name = new_sprite
 
     const client = await props.client_future
@@ -34,42 +49,69 @@
     })
   }
 
-  function clapDown() {
-    changeSpriteState(Sprite.Ready)
+  function clap_down() {
+    change_sprite_state(Sprite.Ready)
   }
 
-  function clapUp() {
-    changeSpriteState(Sprite.Clap)
-    setTimeout(() => {
-      changeSpriteState(Sprite.Idle)
-    }, 100)
+  function clap_up() {
+    change_sprite_state(Sprite.Clap)
+
+    setTimeout(() => change_sprite_state(Sprite.Idle),
+        CLAP_TIME)
   }
 
   if (props.monkey.your_token != undefined) {
     window.addEventListener('keydown', event =>
-        isSpace(event) && clapDown())
+        is_space(event) && clap_down())
     window.addEventListener('keyup', event =>
-        isSpace(event) && clapUp())
+        is_space(event) && clap_up())
+  }
+
+  function show_chat_message(message: string) {
+    chat_message.message = message
+    chat_message.removed = false
+    chat_message.show = true
+
+    setTimeout(() => chat_message.show = false,
+        CHAT_MESSAGE_TIME_MS)
+    setTimeout(() => chat_message.removed = true,
+        CHAT_MESSAGE_TIME_MS + chat_message.animation_speed*1000)
   }
 
   props.client_future.then(client => {
     client.on<ClapResponseMessage>('clap', message => {
-      if (message.row != props.row || message.column != props.monkey.seat) {
-        return
+      if (message.row == props.row && message.column == props.monkey.seat) {
+        sprite.name = message.sprite as Sprite
       }
-      sprite.name = message.sprite as Sprite
+    })
+
+    client.on<ChatResponseMessage>('chat', message => {
+      if (message.row == props.row && message.column == props.monkey.seat) {
+        show_chat_message(message.message)
+      }
     })
   })
 </script>
 
 <template>
-  <img :src="`/monkeys/${sprite.name}.png`" class="monkey" alt="Moonkie">
+  <img
+      :src="`/monkeys/${sprite.name}.png`"
+      class="monkey"
+      alt="Moonkie"
+      draggable="false" />
+
+  <dev class="message-box">
+    <div class="message">
+      <img src="/icons/chat-bottom.svg" draggable="false" />
+      <text>{{ chat_message.message }}</text>
+    </div>
+  </dev>
 </template>
 
 <style scoped>
   .monkey {
     position: absolute;
-    left: calc(50%);
+    left: 50%;
     transform: translateX(-50%);
 
     bottom: v-bind('`${ props.monkey.bottom + 1 }vh`');
@@ -77,5 +119,55 @@
     margin-left: v-bind('`${ props.monkey.x_offset }vh`');
 
     filter: brightness(0.5);
+  }
+
+  .message-box {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+
+    bottom: v-bind('`${ props.monkey.bottom + props.monkey.height + 1.7 }vh`');
+    margin-left: calc(v-bind('`${ props.monkey.x_offset }vh`'));
+    margin-bottom: v-bind('chat_message.show ? "0" : "-0.5em"');
+
+    transition:
+        opacity v-bind('`${ chat_message.animation_speed }s`'),
+        margin-bottom v-bind('`${ chat_message.animation_speed }s`');
+    visibility: v-bind('chat_message.removed ? "hidden" : "visible"');
+    opacity: v-bind("chat_message.show ? 1 : 0");
+  }
+
+  .message {
+    display: flex;
+    position: absolute;
+    padding: 0.8em;
+
+    max-width: 20em;
+    max-height: 10em;
+    min-width: 5em;
+
+    width: max-content;
+    height: auto;
+    left: 0;
+    bottom: 0;
+
+    border-radius: 1em;
+    background-color: #FFFB;
+  }
+
+  .message text {
+    display: inline-block;
+    overflow-y: scroll;
+
+    font-size: 1.6em;
+    word-wrap: break-word;
+  }
+
+  .message img {
+    position: absolute;
+    height: 1.5em;
+
+    color: #FFFB;
+    bottom: -1.5em;
   }
 </style>

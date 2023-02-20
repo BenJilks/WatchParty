@@ -54,7 +54,7 @@ function on_client_connected(client: SocketClient) {
 
   console.log('Listening for state changes')
   client.on('update-state', (update: MessageStateUpdate) => {
-    scan_seats_for_changes(update)
+    scan_seats_for_changes(update);
   })
 }
 
@@ -62,6 +62,10 @@ interface Props {
   client_future: Promise<SocketClient>,
 }
 const props = defineProps<Props>()
+
+onMounted(() => {
+  (rowsRef.value[5] as SeatRow).add_monkey(3)
+})
 
 defineExpose({
   on_client_connected,
@@ -72,10 +76,11 @@ defineExpose({
   <div class="seats-background"></div>
   <div class="front-board"></div>
   <div class="seats">
-    <SeatRow v-for = "id in ROW_COUNT"
-             :row = "id - 1"
-             :key = "id - 1" ref="rowsRef"
-             :client_future = "client_future" />
+    <SeatRow
+        v-for = "id in ROW_COUNT"
+        :row = "id - 1"
+        :key = "id - 1" ref="rowsRef"
+        :client_future = "client_future" />
   </div>
 </template>
 
