@@ -101,13 +101,31 @@
       screen.set_synchronising(value)
   }
 
+  function set_needs_focus() {
+    const screen: Screen | null = props.screen_ref.value
+    if (screen == null)
+      return
+
+    const give_focus = () => {
+      props.video_ref.value?.play()
+      data.playing = true
+      send_video_update()
+      screen.set_needs_focus(false)
+      window.removeEventListener('click', give_focus)
+    }
+
+    send_video_update()
+    screen.set_needs_focus(true)
+    window.addEventListener('click', give_focus)
+  }
+
   function set_is_playing(playing: boolean) {
     const video = props.video_ref.value
     if (video == null)
       return
 
     playing
-        ? video.play().catch(() => {})
+        ? video.play().catch(() => set_needs_focus())
         : video.pause()
     data.playing = !video.paused
     data.progress = video.currentTime
@@ -144,7 +162,7 @@
       set_syncing(false)
       if (data.playing) {
         video.play().catch(() =>
-            play_pause())
+            set_needs_focus())
       }
     })
   })
@@ -192,7 +210,8 @@
     is_seeking = false
 
     if (data.playing) {
-      props.video_ref.value?.play().catch(() => {})
+      props.video_ref.value?.play()
+          .catch(() => set_needs_focus())
     }
 
     await send_video_update()

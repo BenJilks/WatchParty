@@ -10,8 +10,7 @@ import (
 type ServerMessageType int
 
 const (
-	ServerMessageBroadcast = ServerMessageType(iota)
-	ServerMessageJoin
+	ServerMessageJoin = ServerMessageType(iota)
 	ServerMessageLeave
 	ServerMessageClap
 	ServerMessageChat
@@ -51,22 +50,10 @@ func (server *Server) updateVideoState() {
 	server.videoState.LastProgressUpdate = time.Now()
 }
 
-func (server *Server) broadcast() {
-	server.updateVideoState()
-	videoMessage := VideoMessage{
-		Playing:  server.videoState.Playing,
-		Progress: server.videoState.Progress,
-	}
-	videoChangeMessage := VideoChangeMessage{
-		VideoFile: server.videoState.VideoFile,
-	}
-
+func (server *Server) updateSeats() {
 	for _, client := range server.connectedClients {
 		_ = client.Send(MessageUpdateState, server.stage.UpdateMessage(client.Token))
-		_ = client.Send(MessageVideoChange, videoChangeMessage)
-		_ = client.Send(MessageVideo, videoMessage)
 	}
-	server.ready()
 }
 
 func (server *Server) generateNewToken() string {
@@ -92,7 +79,18 @@ func (server *Server) join(client *Client) {
 	client.Token = &token
 	server.connectedClients[token] = client
 	server.stage.PlaceViewer(token)
-	server.broadcast()
+	server.updateSeats()
+	server.updateVideoState()
+
+	videoMessage := VideoMessage{
+		Playing:  server.videoState.Playing,
+		Progress: server.videoState.Progress,
+	}
+	videoChangeMessage := VideoChangeMessage{
+		VideoFile: server.videoState.VideoFile,
+	}
+	_ = client.Send(MessageVideoChange, videoChangeMessage)
+	_ = client.Send(MessageVideo, videoMessage)
 }
 
 func (server *Server) leave(token string) {
@@ -103,7 +101,7 @@ func (server *Server) leave(token string) {
 	}
 
 	server.stage.RemovePlayer(token)
-	server.broadcast()
+	server.updateSeats()
 }
 
 func (server *Server) broadcastExcept(
@@ -207,8 +205,6 @@ func (server *Server) handleMessage(message ServerMessage) {
 		server.join(message.Client)
 	case ServerMessageLeave:
 		server.leave(*message.Token)
-	case ServerMessageBroadcast:
-		server.broadcast()
 	case ServerMessageClap:
 		server.clap(*message.Token, message.State)
 	case ServerMessageChat:

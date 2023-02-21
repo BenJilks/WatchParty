@@ -3,9 +3,11 @@ import { ref } from 'vue'
 
 const video_ref = ref<HTMLVideoElement | null>(null)
 const synchronising = ref(true)
+const needs_focus = ref(false)
 
 defineExpose({
   set_synchronising: (value: boolean) => synchronising.value = value,
+  set_needs_focus: (value: boolean) => needs_focus.value = value,
   video_ref,
 })
 </script>
@@ -15,8 +17,11 @@ defineExpose({
     <video ref="video_ref">
       <source :src="'/vids/[Rhythm Heaven] - Fan Club (Perfect) (English)-DNbvktlB0gU.mp4'" type="video/mp4">
     </video>
-    <div v-if="synchronising" id="overlay">
+    <div v-if="synchronising" class="overlay">
       Synchronising Viewers...
+    </div>
+    <div v-if="needs_focus && !synchronising" class="overlay">
+      Click Anywhere to Play
     </div>
   </div>
 </template>
@@ -47,7 +52,7 @@ defineExpose({
     object-fit: contain;
   }
 
-  .screen #overlay {
+  .screen .overlay {
     padding: 0.5em 1em;
     border-radius: 0.5em;
     width: auto;
@@ -60,5 +65,7 @@ defineExpose({
     color: white;
     background-color: #000a;
     z-index: 1;
+
+    pointer-events: none;
   }
 </style>

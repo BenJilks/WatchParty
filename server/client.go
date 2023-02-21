@@ -34,13 +34,6 @@ func handleClient(client Client, serverMessage chan<- ServerMessage, videos []Vi
 
 	for message := range client.Messages {
 		switch message.Type {
-		case MessageUpdateState:
-			serverMessage <- ServerMessage{
-				Type:   ServerMessageBroadcast,
-				Client: &client,
-				Token:  client.Token,
-			}
-
 		case MessageClap:
 			var clapMessage ClapMessage
 			_ = json.Unmarshal(message.Data, &clapMessage)
