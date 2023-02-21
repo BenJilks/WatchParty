@@ -115,7 +115,7 @@
       video.currentTime = data.progress
 
       message.playing
-          ? video.play()
+          ? video.play().catch(() => {})
           : video.pause()
       data.playing = message.playing
     })
@@ -129,7 +129,7 @@
     client.on('ready', () => {
       set_syncing(false)
       if (data.playing)
-        props.video_ref.value?.play()
+        props.video_ref.value?.play().catch(() => {})
     })
   })
 
@@ -142,7 +142,7 @@
       return
 
     video.paused
-        ? await video.play()
+        ? video.play().catch(() => {})
         : video.pause()
     data.playing = !video.paused
     data.progress = video.currentTime
@@ -201,7 +201,7 @@
     is_seeking = false
 
     if (data.playing) {
-      await props.video_ref.value?.play()
+      props.video_ref.value?.play().catch(() => {})
     }
 
     await send_video_update()
