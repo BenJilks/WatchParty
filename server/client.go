@@ -20,6 +20,10 @@ type VideoListMessage struct {
 	Videos []VideoData `json:"videos"`
 }
 
+type VideoChangeMessage struct {
+	VideoFile string `json:"video_file"`
+}
+
 func handleClient(client Client, serverMessage chan<- ServerMessage, videos []VideoData) {
 	serverMessage <- ServerMessage{
 		Type:   ServerMessageJoin,
@@ -70,6 +74,16 @@ func handleClient(client Client, serverMessage chan<- ServerMessage, videos []Vi
 			_ = client.Send(MessageVideoList, VideoListMessage{
 				Videos: videos,
 			})
+
+		case MessageVideoChange:
+			var videoChangeMessage VideoChangeMessage
+			_ = json.Unmarshal(message.Data, &videoChangeMessage)
+
+			serverMessage <- ServerMessage{
+				Type:      ServerMessageVideoChange,
+				Token:     client.Token,
+				VideoFile: videoChangeMessage.VideoFile,
+			}
 
 		case MessageDisconnect:
 			if client.Token != nil {

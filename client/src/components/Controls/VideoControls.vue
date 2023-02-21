@@ -84,7 +84,10 @@
   })
 
   async function play(video: HTMLVideoElement) {
-    await video.play()
+    video.play().catch(() => {
+      video.oncanplay = () =>
+          video.play()
+    })
     data.play_pause_icon = 'pause'
   }
 
@@ -195,15 +198,11 @@
       return
 
     video.src = `/vids/${ video_file }`
-    video.onloadeddata = () => {
-      data.progress = 0
-      data.duration = video.duration
-      data.play_pause_icon = video.paused ? 'play' : 'pause'
-      data.volume_icon = video.muted ? 'mute' : 'volume'
-      buffered_segments.splice(0, buffered_segments.length)
-
-      video.onloadeddata = null
-    }
+    data.progress = 0
+    data.duration = video.duration
+    data.play_pause_icon = video.paused ? 'play' : 'pause'
+    data.volume_icon = video.muted ? 'mute' : 'volume'
+    buffered_segments.splice(0, buffered_segments.length)
   }
 
   defineExpose({

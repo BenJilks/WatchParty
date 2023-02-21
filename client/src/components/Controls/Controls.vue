@@ -4,17 +4,21 @@
   import SelectMenu from '@/components/Controls/SelectMenu.vue'
   import type { Ref } from 'vue'
   import { SocketClient } from '@/socket_client'
-  import { ref } from 'vue'
+  import {onMounted, ref} from 'vue'
 
   interface Props {
     video: Ref<HTMLVideoElement | null>,
     client_future: Promise<SocketClient>,
   }
 
+  type ChangeVideoMessage = {
+    video_file: string,
+  }
+
   const select_menu_ref = ref<SelectMenu | null>(null)
   const video_controls_ref = ref<VideoControls | null>(null)
   const select_menu_open_ref = ref(false)
-  defineProps<Props>()
+  const props = defineProps<Props>()
 
   function toggle_select_menu() {
     const select_menu = select_menu_ref.value
@@ -24,14 +28,29 @@
     }
   }
 
-  function video_selected(video_file: string) {
+  function change_video(video_file: string) {
     console.log(`Selected video: '${ video_file }'`)
-    toggle_select_menu()
-
     const video_controls = video_controls_ref.value
     if (video_controls != null)
       video_controls.change_video(video_file)
   }
+
+  async function video_selected(video_file: string) {
+    change_video(video_file)
+    toggle_select_menu()
+
+    const client = await props.client_future
+    client.send<ChangeVideoMessage>('video-change', {
+      video_file: video_file,
+    })
+  }
+
+  onMounted(async () => {
+    const client = await props.client_future
+    client.on<ChangeVideoMessage>('video-change', message => {
+      change_video(message.video_file)
+    })
+  })
 </script>
 
 <template>

@@ -16,6 +16,7 @@ const (
 	ServerMessageClap
 	ServerMessageChat
 	ServerMessageVideo
+	ServerMessageVideoChange
 )
 
 type ServerMessage struct {
@@ -28,6 +29,8 @@ type ServerMessage struct {
 
 	Playing  bool
 	Progress float64
+
+	VideoFile string
 }
 
 type Server struct {
@@ -52,10 +55,13 @@ func (server *Server) broadcast() {
 		Playing:  server.videoState.Playing,
 		Progress: server.videoState.Progress,
 	}
+	videoChangeMessage := VideoChangeMessage{
+		VideoFile: server.videoState.VideoFile,
+	}
 
 	for _, client := range server.connectedClients {
-		_ = client.Send(MessageUpdateState,
-			server.stage.UpdateMessage(client.Token))
+		_ = client.Send(MessageUpdateState, server.stage.UpdateMessage(client.Token))
+		_ = client.Send(MessageVideoChange, videoChangeMessage)
 		_ = client.Send(MessageVideo, videoMessage)
 	}
 }
@@ -147,15 +153,30 @@ func (server *Server) chat(token string, message string) {
 }
 
 func (server *Server) video(token string, playing bool, progress float64) {
+	videoFile := server.videoState.VideoFile
 	server.videoState = VideoState{
 		Playing:            playing,
 		Progress:           progress,
 		LastProgressUpdate: time.Now(),
+		VideoFile:          videoFile,
 	}
 
 	server.broadcastExcept(token, MessageVideo, VideoMessage{
 		Playing:  playing,
 		Progress: progress,
+	})
+}
+
+func (server *Server) videoChange(token string, videoFile string) {
+	server.videoState = VideoState{
+		Playing:            false,
+		Progress:           0,
+		LastProgressUpdate: time.Now(),
+		VideoFile:          videoFile,
+	}
+
+	server.broadcastExcept(token, MessageVideoChange, VideoChangeMessage{
+		VideoFile: videoFile,
 	})
 }
 
@@ -173,6 +194,8 @@ func (server *Server) handleMessage(message ServerMessage) {
 		server.chat(*message.Token, message.Message)
 	case ServerMessageVideo:
 		server.video(*message.Token, message.Playing, message.Progress)
+	case ServerMessageVideoChange:
+		server.videoChange(*message.Token, message.VideoFile)
 	default:
 		panic(message)
 	}
@@ -188,6 +211,7 @@ func StartServer(messages <-chan ServerMessage) {
 			Playing:            false,
 			Progress:           0,
 			LastProgressUpdate: time.Now(),
+			VideoFile:          DefaultVideoFile,
 		},
 	}
 

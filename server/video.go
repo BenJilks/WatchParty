@@ -18,6 +18,7 @@ type VideoState struct {
 	Playing            bool
 	Progress           float64
 	LastProgressUpdate time.Time
+	VideoFile          string
 }
 
 type VideoData struct {
