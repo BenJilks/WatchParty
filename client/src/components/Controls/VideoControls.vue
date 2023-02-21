@@ -216,16 +216,6 @@
     --played-color: #333F;
   }
 
-  .icon {
-    height: 100%;
-    aspect-ratio: 1/1;
-    padding: 0.2em;
-
-    cursor: pointer;
-    pointer-events: all;
-    user-modify: none;
-  }
-
   #timeline {
     position: relative;
     width: 100%;

@@ -1,7 +1,7 @@
 <script setup lang="ts">
   import type { ClapMessage, ClapResponseMessage, MonkeyData } from '@/monkey'
   import { SocketClient } from "@/socket_client"
-  import { reactive } from 'vue'
+  import {onRenderTriggered, onUpdated, reactive, ref} from 'vue'
 
   const CHAT_MESSAGE_TIME_MS = 2500
   const CLAP_TIME = 150
@@ -26,10 +26,10 @@
 
   const props = defineProps<Props>()
   const sprite = reactive({ name: Sprite.Idle })
+  const chat_message_enabled = ref(false)
   const chat_message = reactive({
     message: '',
     show: false,
-    removed: true,
     animation_speed: 0.2,
   })
 
@@ -68,14 +68,16 @@
   }
 
   function show_chat_message(message: string) {
-    chat_message.message = message
-    chat_message.removed = false
-    chat_message.show = true
+    chat_message_enabled.value = true
+    setTimeout(() => {
+      chat_message.message = message
+      chat_message.show = true
 
-    setTimeout(() => chat_message.show = false,
-        CHAT_MESSAGE_TIME_MS)
-    setTimeout(() => chat_message.removed = true,
-        CHAT_MESSAGE_TIME_MS + chat_message.animation_speed*1000)
+      setTimeout(() => chat_message.show = false,
+          CHAT_MESSAGE_TIME_MS)
+      setTimeout(() => chat_message_enabled.value = false,
+          CHAT_MESSAGE_TIME_MS + chat_message.animation_speed*1000)
+    }, 10)
   }
 
   props.client_future.then(client => {
@@ -100,7 +102,7 @@
       alt="Moonkie"
       draggable="false" />
 
-  <dev class="message-box">
+  <dev v-if="chat_message_enabled" class="message-box">
     <div class="message">
       <img src="/icons/chat-bottom.svg" draggable="false" />
       <text>{{ chat_message.message }}</text>
@@ -133,7 +135,6 @@
     transition:
         opacity v-bind('`${ chat_message.animation_speed }s`'),
         margin-bottom v-bind('`${ chat_message.animation_speed }s`');
-    visibility: v-bind('chat_message.removed ? "hidden" : "visible"');
     opacity: v-bind("chat_message.show ? 1 : 0");
   }
 
