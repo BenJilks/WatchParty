@@ -9,6 +9,9 @@ const (
 	MessageVideo       = MessageType("video")
 	MessageVideoList   = MessageType("video-list")
 	MessageVideoChange = MessageType("video-change")
+	MessageReady       = MessageType("ready")
+	MessageWaiting     = MessageType("waiting")
+	MessageSyncing     = MessageType("syncing")
 	MessageDisconnect  = MessageType("disconnect")
 )
 

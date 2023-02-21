@@ -2,11 +2,12 @@
 import Seats from '@/components/Seats.vue'
 import Stage from '@/components/Stage.vue'
 import Controls from '@/components/Controls/Controls.vue'
+import Screen from '@/components/Screen.vue'
 import { open_socket_client } from '@/socket_client'
 import { computed, onMounted, reactive, ref } from 'vue'
 
+const screen_ref = ref<Screen | null>(null)
 const seats_ref = ref<Seats>()
-const video_ref = ref<HTMLVideoElement | null>(null)
 const client_future = reactive(open_socket_client())
 
 onMounted(async () => {
@@ -22,16 +23,13 @@ onMounted(async () => {
 
 <template>
   <div class="background">
-    <video ref="video_ref" class="screen">
-      <source :src="'/vids/[Rhythm Heaven] - Fan Club (Perfect) (English)-DNbvktlB0gU.mp4'" type="video/mp4">
-    </video>
-
+    <Screen ref="screen_ref" />
     <Stage />
     <Seats
         ref="seats_ref"
         :client_future="client_future" />
     <Controls
-        :video="computed(() => video_ref)"
+        :screen_ref="computed(() => screen_ref)"
         :client_future="client_future" />
   </div>
 </template>
@@ -45,20 +43,5 @@ onMounted(async () => {
     height: 100%;
 
     background-color: #050505;
-  }
-
-  .screen {
-    position: absolute;
-    bottom: calc(var(--seat-height) + 7vh);
-    left: 50%;
-
-    width: calc(100% - 25vw);
-    height: calc(100% - var(--seat-height) - 9vh);
-    object-fit: contain;
-    transform: translateX(-50%);
-
-    background-color: #0a0a0aff;
-    box-shadow: 0 0 5vh 2vh #6666;
-    border-radius: 0.5vh;
   }
 </style>

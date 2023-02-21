@@ -2,12 +2,13 @@
   import VideoControls from '@/components/Controls/VideoControls.vue'
   import Chat from '@/components/Controls/Chat.vue'
   import SelectMenu from '@/components/Controls/SelectMenu.vue'
+  import Screen from '@/components/Screen.vue'
   import type { Ref } from 'vue'
   import { SocketClient } from '@/socket_client'
-  import {onMounted, ref} from 'vue'
+  import {computed, onMounted, ref} from 'vue'
 
   interface Props {
-    video: Ref<HTMLVideoElement | null>,
+    screen_ref: Ref<Screen | null>,
     client_future: Promise<SocketClient>,
   }
 
@@ -62,7 +63,8 @@
     <div id="video-panel" class="panel">
       <VideoControls
           ref="video_controls_ref"
-          :video="video"
+          :screen_ref="computed(() => screen_ref.value)"
+          :video_ref="computed(() => screen_ref.value?.video_ref)"
           :client_future="client_future" />
     </div>
 

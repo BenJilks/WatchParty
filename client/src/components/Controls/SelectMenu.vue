@@ -1,6 +1,7 @@
 <script setup lang="ts">
+  import VideoItem from '@/components/Controls/VideoItem.vue'
+  import type { VideoData } from '@/components/Controls/VideoItem.vue'
   import { reactive, ref } from 'vue'
-  import VideoItem, { VideoData } from '@/components/Controls/VideoItem.vue'
   import { SocketClient } from '@/socket_client'
 
   interface Props {

@@ -1,6 +1,8 @@
 package main
 
-import "encoding/json"
+import (
+	"encoding/json"
+)
 
 type ClapMessage struct {
 	State string `json:"state"`
@@ -83,6 +85,19 @@ func handleClient(client Client, serverMessage chan<- ServerMessage, videos []Vi
 				Type:      ServerMessageVideoChange,
 				Token:     client.Token,
 				VideoFile: videoChangeMessage.VideoFile,
+			}
+
+		case MessageReady:
+			client.Ready = true
+			serverMessage <- ServerMessage{
+				Type: ServerMessageReady,
+			}
+
+		case MessageWaiting:
+			client.Ready = false
+			serverMessage <- ServerMessage{
+				Type:  ServerMessageWaiting,
+				Token: client.Token,
 			}
 
 		case MessageDisconnect:

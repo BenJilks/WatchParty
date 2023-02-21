@@ -1,11 +1,13 @@
 <script setup lang="ts">
   import BufferedSegment from '@/components/Controls/BufferedSegment.vue'
+  import Screen from '@/components/Screen.vue'
   import type { Ref } from 'vue'
   import { computed, reactive, ref, watch } from 'vue'
   import { SocketClient } from '@/socket_client'
 
   interface Props {
-    video: Ref<HTMLVideoElement | null>,
+    screen_ref: Ref<InstanceType<typeof Screen> | null>,
+    video_ref: Ref<HTMLVideoElement | null>,
     client_future: Promise<SocketClient>,
   }
 
@@ -24,8 +26,9 @@
   const data = reactive({
     progress: 0,
     duration: 1,
-    play_pause_icon: 'play',
-    volume_icon: 'volume',
+    playing: false,
+    muted: false,
+    syncing: false,
   })
 
   const buffered_segments = reactive<BufferedSegmentData[]>([])
@@ -51,59 +54,97 @@
   const progress_factor = computed(() =>
       data.progress / data.duration)
 
+  async function send_playback_status_update(status: string) {
+    const client = await props.client_future
+    client.send(status, null)
+  }
+
   function update_video_event_listeners(video: HTMLVideoElement) {
     video.preload = 'auto'
+
     video.addEventListener('durationchange', () =>
         data.duration = video.duration)
     video.addEventListener('progress', () =>
         update_buffered_segments(video))
+
     video.addEventListener('timeupdate', () => {
       if (!is_seeking)
         data.progress = video.currentTime
     })
+
+    let is_waiting = true
+
+    async function on_waiting() {
+      if (is_waiting)
+        return
+
+      is_waiting = true
+      await send_playback_status_update('waiting')
+    }
+
+    async function on_ready() {
+      if (!is_waiting)
+        return
+
+      is_waiting = false
+      await send_playback_status_update('ready')
+    }
+
+    video.addEventListener('waiting', on_waiting)
+    video.addEventListener('stalled', on_waiting)
+    video.addEventListener('canplaythrough', on_ready)
+    video.addEventListener('playing', on_ready)
   }
 
-  watch(props.video, async () => {
-    const video = props.video.value!
+  function set_syncing(value: boolean) {
+    const screen: Screen | null = props.screen_ref.value
+    if (screen != null)
+      screen.set_synchronising(value)
+
+    data.syncing = value
+  }
+
+  watch(props.video_ref, async () => {
+    const video = props.video_ref.value!
     update_video_event_listeners(video)
 
     const client = await props.client_future
     client.on<VideoStateMessage>('video', message => {
-      const video = props.video.value!
+      const video = props.video_ref.value!
       data.progress = message.progress
       video.currentTime = data.progress
 
       message.playing
           ? video.play()
           : video.pause()
+      data.playing = message.playing
+    })
 
-      data.play_pause_icon = message.playing
-          ? 'pause'
-          : 'play'
+    client.on('syncing', () => {
+      set_syncing(true)
+      if (data.playing)
+        props.video_ref.value?.pause()
+    })
+
+    client.on('ready', () => {
+      set_syncing(false)
+      if (data.playing)
+        props.video_ref.value?.play()
     })
   })
 
-  async function play(video: HTMLVideoElement) {
-    video.play().catch(() => {
-      video.oncanplay = () =>
-          video.play()
-    })
-    data.play_pause_icon = 'pause'
-  }
-
-  function pause(video: HTMLVideoElement) {
-    video.pause()
-    data.play_pause_icon = 'play'
-  }
-
   async function play_pause() {
-    const video = props.video.value
+    if (data.syncing)
+      return
+
+    const video = props.video_ref.value
     if (video == null)
       return
 
     video.paused
-        ? await play(video)
-        : pause(video)
+        ? await video.play()
+        : video.pause()
+    data.playing = !video.paused
     data.progress = video.currentTime
 
     const client = await props.client_future
@@ -114,17 +155,16 @@
   }
 
   function toggle_mute() {
-    const video = props.video.value
+    const video = props.video_ref.value
     if (video == null)
       return
 
     video.muted = !video.muted
-    data.volume_icon = video.muted
-        ? 'mute' : 'volume'
+    data.muted = video.muted
   }
 
   function seek(progress: number) {
-    const video = props.video.value
+    const video = props.video_ref.value
     if (video == null)
       return
 
@@ -137,14 +177,14 @@
   }
 
   function on_seek_start() {
-    if (is_seeking)
+    if (is_seeking || data.syncing)
       return
-    props.video.value?.pause()
+    props.video_ref.value?.pause()
     is_seeking = true
   }
 
   async function send_video_update() {
-    const video = props.video.value
+    const video = props.video_ref.value
     if (video == null)
       return
 
@@ -160,9 +200,8 @@
       return
     is_seeking = false
 
-    const playing = (data.play_pause_icon == 'pause')
-    if (playing) {
-      await props.video.value?.play()
+    if (data.playing) {
+      await props.video_ref.value?.play()
     }
 
     await send_video_update()
@@ -172,7 +211,7 @@
     if (!is_seeking)
       return
 
-    const video = props.video.value
+    const video = props.video_ref.value
     if (video == null)
       return
 
@@ -192,17 +231,22 @@
     seek(data.progress)
   })
 
-  function change_video(video_file: string) {
-    const video = props.video.value
+  async function change_video(video_file: string) {
+    const video = props.video_ref.value
     if (video == null)
       return
 
-    video.src = `/vids/${ video_file }`
+    const new_src = `/vids/${ video_file }`
+    if (new_src != video.src) {
+      video.src = `/vids/${video_file}`
+      update_video_event_listeners(video)
+      update_buffered_segments(video)
+    }
+
     data.progress = 0
+    data.playing = true
     data.duration = video.duration
-    data.play_pause_icon = video.paused ? 'play' : 'pause'
-    data.volume_icon = video.muted ? 'mute' : 'volume'
-    buffered_segments.splice(0, buffered_segments.length)
+    set_syncing(true)
   }
 
   defineExpose({
@@ -214,7 +258,7 @@
   <img
       class="icon"
       draggable="false"
-      :src="`/icons/${data.play_pause_icon}.svg`"
+      :src="`/icons/${ data.playing ? 'pause' : 'play' }.svg`"
       @click="play_pause" />
 
   <div id="timeline" ref="seek_bar_ref" @mousedown="on_seek_start">
@@ -230,7 +274,7 @@
   <img
       class="icon"
       draggable="false"
-      :src="`/icons/${data.volume_icon}.svg`"
+      :src="`/icons/${ data.muted ? 'mute' : 'volume' }.svg`"
       @click="toggle_mute" />
 </template>
 

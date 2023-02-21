@@ -17,6 +17,8 @@ const (
 	ServerMessageChat
 	ServerMessageVideo
 	ServerMessageVideoChange
+	ServerMessageReady
+	ServerMessageWaiting
 )
 
 type ServerMessage struct {
@@ -64,6 +66,7 @@ func (server *Server) broadcast() {
 		_ = client.Send(MessageVideoChange, videoChangeMessage)
 		_ = client.Send(MessageVideo, videoMessage)
 	}
+	server.ready()
 }
 
 func (server *Server) generateNewToken() string {
@@ -169,15 +172,33 @@ func (server *Server) video(token string, playing bool, progress float64) {
 
 func (server *Server) videoChange(token string, videoFile string) {
 	server.videoState = VideoState{
-		Playing:            false,
+		Playing:            true,
 		Progress:           0,
 		LastProgressUpdate: time.Now(),
 		VideoFile:          videoFile,
 	}
 
+	for _, client := range server.connectedClients {
+		client.Ready = false
+	}
+
 	server.broadcastExcept(token, MessageVideoChange, VideoChangeMessage{
 		VideoFile: videoFile,
 	})
+}
+
+func (server *Server) ready() {
+	for _, client := range server.connectedClients {
+		if !client.Ready {
+			return
+		}
+	}
+
+	server.broadcastExcept("", MessageReady, nil)
+}
+
+func (server *Server) waiting(token string) {
+	server.broadcastExcept(token, MessageWaiting, nil)
 }
 
 func (server *Server) handleMessage(message ServerMessage) {
@@ -196,6 +217,10 @@ func (server *Server) handleMessage(message ServerMessage) {
 		server.video(*message.Token, message.Playing, message.Progress)
 	case ServerMessageVideoChange:
 		server.videoChange(*message.Token, message.VideoFile)
+	case ServerMessageReady:
+		server.ready()
+	case ServerMessageWaiting:
+		server.waiting(*message.Token)
 	default:
 		panic(message)
 	}
