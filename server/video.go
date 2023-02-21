@@ -3,7 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
-	ffmpeg_go "github.com/u2takey/ffmpeg-go"
+	ffmpeg "github.com/u2takey/ffmpeg-go"
 	"io/fs"
 	"os"
 	"path"
@@ -28,10 +28,10 @@ type VideoData struct {
 }
 
 func readVideoFrame(path string, outputPath string) error {
-	return ffmpeg_go.Input(path).
-		Filter("select", ffmpeg_go.Args{fmt.Sprintf("gte(n,%d)", ThumbnailFrameNumber)}).
-		Filter("scale", ffmpeg_go.Args{fmt.Sprintf("%d:-1", ThumbnailScale)}).
-		Output(outputPath, ffmpeg_go.KwArgs{"frames:v": 1, "format": "image2", "vcodec": "mjpeg"}).
+	return ffmpeg.Input(path).
+		Filter("select", ffmpeg.Args{fmt.Sprintf("gte(n,%d)", ThumbnailFrameNumber)}).
+		Filter("scale", ffmpeg.Args{fmt.Sprintf("%d:-1", ThumbnailScale)}).
+		Output(outputPath, ffmpeg.KwArgs{"frames:v": 1, "format": "image2", "vcodec": "mjpeg"}).
 		OverWriteOutput().
 		Compile().
 		Run()
