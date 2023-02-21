@@ -16,7 +16,11 @@ type VideoMessage struct {
 	Progress float64 `json:"progress"`
 }
 
-func handleClient(client Client, serverMessage chan<- ServerMessage) {
+type VideoListMessage struct {
+	Videos []VideoData `json:"videos"`
+}
+
+func handleClient(client Client, serverMessage chan<- ServerMessage, videos []VideoData) {
 	serverMessage <- ServerMessage{
 		Type:   ServerMessageJoin,
 		Client: &client,
@@ -62,6 +66,11 @@ func handleClient(client Client, serverMessage chan<- ServerMessage) {
 				Progress: videoMessage.Progress,
 			}
 
+		case MessageVideoList:
+			_ = client.Send(MessageVideoList, VideoListMessage{
+				Videos: videos,
+			})
+
 		case MessageDisconnect:
 			if client.Token != nil {
 				serverMessage <- ServerMessage{
@@ -77,8 +86,8 @@ func handleClient(client Client, serverMessage chan<- ServerMessage) {
 	}
 }
 
-func ListenForNewClients(clients <-chan Client, serverMessage chan<- ServerMessage) {
+func ListenForNewClients(clients <-chan Client, serverMessage chan<- ServerMessage, videos []VideoData) {
 	for client := range clients {
-		go handleClient(client, serverMessage)
+		go handleClient(client, serverMessage, videos)
 	}
 }

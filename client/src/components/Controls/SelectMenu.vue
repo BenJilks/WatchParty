@@ -1,27 +1,51 @@
 <script setup lang="ts">
-  import { ref } from 'vue'
-  import VideoItem from "@/components/Controls/VideoItem.vue";
+  import { reactive, ref } from 'vue'
+  import VideoItem, { VideoData } from '@/components/Controls/VideoItem.vue'
+  import { SocketClient } from '@/socket_client'
+
+  interface Props {
+    client_future: Promise<SocketClient>,
+  }
 
   interface Emits {
     (e: 'selected', video: string): void,
   }
 
+  type VideoListMessage = {
+    videos: VideoData[],
+  }
+
+  const props = defineProps<Props>()
   const emit = defineEmits<Emits>()
   const show = ref(false)
   const disabled = ref(true)
+  const video_list = reactive<VideoData[]>([])
+
+  async function request_video_list() {
+    if (request_video_list.length > 0)
+      return
+
+    const client = await props.client_future
+    client.on<VideoListMessage>('video-list', message => {
+      video_list.splice(0, video_list.length)
+      video_list.push(...message.videos)
+    })
+    client.send('video-list', null)
+  }
 
   function toggle() {
-    if (show.value) {
-      show.value = false
-      setTimeout(() => disabled.value = true, 200)
-    } else {
+    if (!show.value) {
+      request_video_list();
       disabled.value = false
       setTimeout(() => show.value = true, 0)
+    } else {
+      show.value = false
+      setTimeout(() => disabled.value = true, 200)
     }
   }
 
-  function selected() {
-    emit('selected', 'test')
+  function selected(video_file: string) {
+    emit('selected', video_file)
   }
 
   defineExpose({
@@ -33,10 +57,10 @@
   <div v-if="!disabled" class="panel" id="menu">
     <div id="content-list">
       <VideoItem
-          v-for="i in 20"
-          title="Whats Your Problem - FULL VIDEO ARCHIVE-MlrfQJJbfsQ.mp4"
-          @selected="selected"
-          :key="i" />
+          v-for="video in video_list"
+          :video="video"
+          :key="video.name"
+          @selected="selected" />
     </div>
   </div>
 </template>

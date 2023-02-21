@@ -5,6 +5,7 @@ const (
 	MessageClap        = MessageType("clap")
 	MessageChat        = MessageType("chat")
 	MessageVideo       = MessageType("video")
+	MessageVideoList   = MessageType("video-list")
 	MessageDisconnect  = MessageType("disconnect")
 )
 

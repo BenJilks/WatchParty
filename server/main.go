@@ -6,17 +6,22 @@ import (
 )
 
 func main() {
-    certFile := flag.String("cert", "", "TLS cert file")
-    keyFile := flag.String("key", "", "TLS key file")
-    port := flag.Uint("port", 8080, "Port")
-    flag.Parse()
+	certFile := flag.String("cert", "", "TLS cert file")
+	keyFile := flag.String("key", "", "TLS key file")
+	port := flag.Uint("port", 8080, "Port")
+	videosPath := flag.String("vids", "../client/dist/vids", "Path to videos")
+	flag.Parse()
 
-    address := fmt.Sprintf("0.0.0.0:%d", *port)
-    clients := make(chan Client)
-    serverMessages := make(chan ServerMessage)
+	videos, err := GenerateThumbnails(*videosPath)
+	if err != nil {
+		panic(err)
+	}
 
-    go StartSocketServer(address, *certFile, *keyFile, clients)
-    go StartServer(serverMessages)
-    ListenForNewClients(clients, serverMessages)
+	address := fmt.Sprintf("0.0.0.0:%d", *port)
+	clients := make(chan Client)
+	serverMessages := make(chan ServerMessage)
+
+	go StartSocketServer(address, *certFile, *keyFile, clients)
+	go StartServer(serverMessages)
+	ListenForNewClients(clients, serverMessages, videos)
 }
-

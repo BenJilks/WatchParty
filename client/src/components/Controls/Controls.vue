@@ -12,6 +12,7 @@
   }
 
   const select_menu_ref = ref<SelectMenu | null>(null)
+  const video_controls_ref = ref<VideoControls | null>(null)
   const select_menu_open_ref = ref(false)
   defineProps<Props>()
 
@@ -23,9 +24,13 @@
     }
   }
 
-  function video_selected(video: string) {
-    console.log(`Selected video: '${ video }'`)
+  function video_selected(video_file: string) {
+    console.log(`Selected video: '${ video_file }'`)
     toggle_select_menu()
+
+    const video_controls = video_controls_ref.value
+    if (video_controls != null)
+      video_controls.change_video(video_file)
   }
 </script>
 
@@ -36,7 +41,10 @@
     </div>
 
     <div id="video-panel" class="panel">
-      <VideoControls :video="video" :client_future="client_future" />
+      <VideoControls
+          ref="video_controls_ref"
+          :video="video"
+          :client_future="client_future" />
     </div>
 
     <div class="panel">
@@ -48,7 +56,10 @@
           alt="" />
     </div>
 
-    <SelectMenu ref="select_menu_ref" @selected="video_selected" />
+    <SelectMenu
+        ref="select_menu_ref"
+        :client_future="client_future"
+        @selected="video_selected" />
   </div>
 </template>
 

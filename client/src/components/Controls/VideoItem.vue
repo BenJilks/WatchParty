@@ -1,25 +1,31 @@
 <script setup lang="ts">
+  export type VideoData = {
+    name: string,
+    video_file: string,
+    thumbnail_file: string,
+  }
+
   interface Props {
-    title: string,
+    video: VideoData,
   }
 
   interface Emits {
-    (e: 'selected'): void,
+    (e: 'selected', video_file: string): void,
   }
 
   const props = defineProps<Props>()
   const emit = defineEmits<Emits>()
 
   function selected() {
-    emit('selected')
+    emit('selected', props.video.video_file)
   }
 </script>
 
 <template>
   <div class="item" @click="selected">
     <div id="content">
-      <img src="/thumbnails/test.png" draggable="false" alt="" />
-      <text>{{ props.title }}</text>
+      <img :src="`/thumbnails/${ props.video.thumbnail_file }`" draggable="false" alt="" />
+      <text>{{ props.video.name }}</text>
     </div>
   </div>
 </template>
@@ -54,6 +60,8 @@
 
   .item img {
     width: 100%;
+    aspect-ratio: 3/5;
+
     height: 10em;
     object-fit: cover;
     border-radius: 0.5em;

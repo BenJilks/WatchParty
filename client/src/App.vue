@@ -23,7 +23,7 @@ onMounted(async () => {
 <template>
   <div class="background">
     <video ref="video_ref" class="screen">
-      <source src="/test2.mp4" type="video/mp4">
+      <source :src="'/vids/[Rhythm Heaven] - Fan Club (Perfect) (English)-DNbvktlB0gU.mp4'" type="video/mp4">
     </video>
 
     <Stage />

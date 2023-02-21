@@ -51,8 +51,7 @@
   const progress_factor = computed(() =>
       data.progress / data.duration)
 
-  watch(props.video, async () => {
-    const video = props.video.value!
+  function update_video_event_listeners(video: HTMLVideoElement) {
     video.preload = 'auto'
     video.addEventListener('durationchange', () =>
         data.duration = video.duration)
@@ -62,9 +61,15 @@
       if (!is_seeking)
         data.progress = video.currentTime
     })
+  }
+
+  watch(props.video, async () => {
+    const video = props.video.value!
+    update_video_event_listeners(video)
 
     const client = await props.client_future
     client.on<VideoStateMessage>('video', message => {
+      const video = props.video.value!
       data.progress = message.progress
       video.currentTime = data.progress
 
@@ -182,6 +187,27 @@
     }
 
     seek(data.progress)
+  })
+
+  function change_video(video_file: string) {
+    const video = props.video.value
+    if (video == null)
+      return
+
+    video.src = `/vids/${ video_file }`
+    video.onloadeddata = () => {
+      data.progress = 0
+      data.duration = video.duration
+      data.play_pause_icon = video.paused ? 'play' : 'pause'
+      data.volume_icon = video.muted ? 'mute' : 'volume'
+      buffered_segments.splice(0, buffered_segments.length)
+
+      video.onloadeddata = null
+    }
+  }
+
+  defineExpose({
+    change_video,
   })
 </script>
 
