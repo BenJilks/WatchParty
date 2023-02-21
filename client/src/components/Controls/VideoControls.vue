@@ -87,8 +87,11 @@
       await send_playback_status_update('ready')
     }
 
-    video.addEventListener('waiting', on_waiting)
     video.addEventListener('playing', on_ready)
+    video.addEventListener('canplay', on_ready)
+    video.addEventListener('stalled', on_waiting)
+    video.addEventListener('waiting', () =>
+        data.playing && on_waiting())
   }
 
   function set_syncing(value: boolean) {
@@ -99,7 +102,10 @@
       screen.set_synchronising(value)
   }
 
-  function set_needs_focus() {
+  function set_needs_focus(error: DOMException) {
+    if (error.name != 'NotAllowedError')
+      return
+
     const screen: Screen | null = props.screen_ref.value
     if (screen == null)
       return
@@ -128,7 +134,7 @@
       return
 
     playing
-        ? video.play().catch(() => set_needs_focus())
+        ? video.play().catch(error => set_needs_focus(error))
         : video.pause()
     data.playing = !video.paused
     data.progress = video.currentTime
@@ -164,8 +170,8 @@
     client.on('ready', () => {
       set_syncing(false)
       if (data.playing) {
-        video.play().catch(() =>
-            set_needs_focus())
+        video.play().catch(error =>
+            set_needs_focus(error))
       }
     })
   })
@@ -214,7 +220,7 @@
 
     if (data.playing) {
       props.video_ref.value?.play()
-          .catch(() => set_needs_focus())
+          .catch(error => set_needs_focus(error))
     }
 
     await send_video_update()
@@ -253,13 +259,14 @@
     is_waiting = true
     data.progress = 0
     data.duration = 1
-    data.playing = false
-    set_syncing(false)
+    data.playing = true
 
     video.src = new_src
-    video.oncanplay = () => {
-      set_is_playing(true)
-      video.oncanplay = null
+    set_syncing(true)
+
+    video.oncanplaythrough = () => {
+      send_playback_status_update('ready')
+      video.oncanplaythrough = null
     }
   }
 
