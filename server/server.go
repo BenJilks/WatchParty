@@ -23,7 +23,7 @@ type ServerMessage struct {
 	Type   ServerMessageType
 	Client *Client
 	Token  *string
-	Sprite string
+	State  string
 
 	Message string
 
@@ -115,19 +115,19 @@ func (server *Server) broadcastExcept(
 }
 
 type ClapResponseMessage struct {
-	Sprite string `json:"sprite"`
+	State  string `json:"state"`
 	Row    int    `json:"row"`
 	Column int    `json:"column"`
 }
 
-func (server *Server) clap(token string, sprite string) {
+func (server *Server) clap(token string, state string) {
 	seat := server.stage.SeatForPlayer(token)
 	if seat == nil {
 		return
 	}
 
 	server.broadcastExcept(token, MessageClap, ClapResponseMessage{
-		Sprite: sprite,
+		State:  state,
 		Row:    seat.Row,
 		Column: seat.Column,
 	})
@@ -189,7 +189,7 @@ func (server *Server) handleMessage(message ServerMessage) {
 	case ServerMessageBroadcast:
 		server.broadcast()
 	case ServerMessageClap:
-		server.clap(*message.Token, message.Sprite)
+		server.clap(*message.Token, message.State)
 	case ServerMessageChat:
 		server.chat(*message.Token, message.Message)
 	case ServerMessageVideo:

@@ -7,13 +7,14 @@ export type MonkeyData = {
     your_token?: string,
 }
 
+export type ClapState = 'ready' | 'clap'
 export type ClapMessage = {
-    sprite: string,
+    state: ClapState,
     token: string,
 }
 
 export type ClapResponseMessage = {
-    sprite: string,
+    state: ClapState,
     row: number,
     column: number,
 }

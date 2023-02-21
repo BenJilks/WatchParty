@@ -1,7 +1,7 @@
 <script setup lang="ts">
-  import type { ClapMessage, ClapResponseMessage, MonkeyData } from '@/monkey'
+  import type { ClapMessage, ClapResponseMessage, ClapState, MonkeyData } from '@/monkey'
   import { SocketClient } from "@/socket_client"
-  import {onRenderTriggered, onUpdated, reactive, ref} from 'vue'
+  import { reactive, ref } from 'vue'
 
   const CHAT_MESSAGE_TIME_MS = 2500
   const CLAP_TIME = 150
@@ -39,24 +39,23 @@
     return key === ' '
   }
 
-  async function change_sprite_state(new_sprite: Sprite) {
-    sprite.name = new_sprite
-
+  async function update_clap_state(state: ClapState) {
     const client = await props.client_future
     client.send<ClapMessage>('clap', {
-      sprite: new_sprite,
+      state: state,
       token: props.monkey.your_token ?? '',
     })
   }
 
   function clap_down() {
-    change_sprite_state(Sprite.Ready)
+    sprite.name = Sprite.Ready
+    update_clap_state('ready')
   }
 
   function clap_up() {
-    change_sprite_state(Sprite.Clap)
-
-    setTimeout(() => change_sprite_state(Sprite.Idle),
+    sprite.name = Sprite.Clap
+    update_clap_state('clap')
+    setTimeout(() => sprite.name = Sprite.Idle,
         CLAP_TIME)
   }
 
@@ -80,17 +79,31 @@
     }, 10)
   }
 
+  function is_me(row: number, column: number): boolean {
+    return row == props.row && column == props.monkey.seat
+  }
+
   props.client_future.then(client => {
     client.on<ClapResponseMessage>('clap', message => {
-      if (message.row == props.row && message.column == props.monkey.seat) {
-        sprite.name = message.sprite as Sprite
+      if (!is_me(message.row, message.column))
+        return
+
+      switch (message.state) {
+        case 'ready':
+          sprite.name = Sprite.Ready
+          break
+        case 'clap':
+          sprite.name = Sprite.Clap
+          setTimeout(() =>
+              sprite.name = Sprite.Idle, CLAP_TIME)
+          break
       }
     })
 
     client.on<ChatResponseMessage>('chat', message => {
-      if (message.row == props.row && message.column == props.monkey.seat) {
-        show_chat_message(message.message)
-      }
+      if (!is_me(message.row, message.column))
+        return
+      show_chat_message(message.message)
     })
   })
 </script>

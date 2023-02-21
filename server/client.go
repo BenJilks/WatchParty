@@ -3,8 +3,8 @@ package main
 import "encoding/json"
 
 type ClapMessage struct {
-	Sprite string `json:"sprite"`
-	Token  string `json:"token"`
+	State string `json:"state"`
+	Token string `json:"token"`
 }
 
 type ChatMessage struct {
@@ -44,9 +44,9 @@ func handleClient(client Client, serverMessage chan<- ServerMessage, videos []Vi
 			_ = json.Unmarshal(message.Data, &clapMessage)
 
 			serverMessage <- ServerMessage{
-				Type:   ServerMessageClap,
-				Token:  &clapMessage.Token,
-				Sprite: clapMessage.Sprite,
+				Type:  ServerMessageClap,
+				Token: &clapMessage.Token,
+				State: clapMessage.State,
 			}
 
 		case MessageChat:
