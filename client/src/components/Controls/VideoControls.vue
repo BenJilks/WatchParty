@@ -109,12 +109,17 @@
     const give_focus = () => {
       props.video_ref.value?.play()
       data.playing = true
+      is_waiting = true
+
       send_video_update()
+      send_playback_status_update('ready')
       screen.set_needs_focus(false)
       window.removeEventListener('click', give_focus)
     }
 
+    is_waiting = false
     send_video_update()
+    send_playback_status_update('waiting')
     screen.set_needs_focus(true)
     window.addEventListener('click', give_focus)
   }
@@ -139,7 +144,7 @@
     const client = await props.client_future
     client.send<VideoStateMessage>('video', {
       playing: !video.paused,
-      progress: data.progress,
+      progress: video.currentTime,
     })
   }
 
@@ -243,16 +248,21 @@
       return
 
     const new_src = `/vids/${ video_file }`
-    if (new_src != video.src) {
-      video.src = `/vids/${video_file}`
-      update_video_event_listeners(video)
-      update_buffered_segments(video)
-    }
+    if (new_src == video.src)
+      return
 
+    is_seeking = false
+    is_waiting = true
     data.progress = 0
-    data.playing = true
-    data.duration = video.duration
-    set_syncing(true)
+    data.duration = 1
+    data.playing = false
+    set_syncing(false)
+
+    video.src = new_src
+    video.oncanplay = () => {
+      set_is_playing(true)
+      video.oncanplay = null
+    }
   }
 
   defineExpose({

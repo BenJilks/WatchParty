@@ -17,10 +17,10 @@ defineExpose({
     <video ref="video_ref">
       <source :src="'/vids/[Rhythm Heaven] - Fan Club (Perfect) (English)-DNbvktlB0gU.mp4'" type="video/mp4">
     </video>
-    <div v-if="synchronising" class="overlay">
+    <div v-if="synchronising && !needs_focus" class="overlay">
       Synchronising Viewers...
     </div>
-    <div v-if="needs_focus && !synchronising" class="overlay">
+    <div v-if="needs_focus" class="overlay">
       Click Anywhere to Play
     </div>
   </div>
