@@ -88,8 +88,6 @@
     }
 
     video.addEventListener('waiting', on_waiting)
-    video.addEventListener('stalled', on_waiting)
-    video.addEventListener('canplaythrough', on_ready)
     video.addEventListener('playing', on_ready)
   }
 
