@@ -26,6 +26,7 @@
 
   const props = defineProps<Props>()
   const sprite = reactive({ name: Sprite.Idle })
+  const monkey_image_ref = ref<HTMLInputElement | null>(null)
   const chat_message_enabled = ref(false)
   const chat_message = reactive({
     message: '',
@@ -53,10 +54,15 @@
   function clap_up() {
     sprite.name = Sprite.Clap
     update_clap_state('clap')
-    setTimeout(() => sprite.name = Sprite.Idle,
-        CLAP_TIME)
-  }
 
+    const monkey_image = monkey_image_ref.value!
+    monkey_image.onload = () => {
+      setTimeout(() => sprite.name = Sprite.Idle,
+          CLAP_TIME)
+      monkey_image.onload = null
+    }
+  }
+  
   if (props.monkey.your_token != undefined) {
     window.addEventListener('keydown', event =>
         is_space(event) && clap_down())
@@ -109,6 +115,7 @@
 <template>
   <img
       :src="`/monkeys/${sprite.name}.png`"
+      ref="monkey_image_ref"
       class="monkey"
       alt="Moonkie"
       draggable="false" />
