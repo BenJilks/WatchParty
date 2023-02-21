@@ -45,6 +45,7 @@
   #menu {
     position: absolute;
     bottom: calc(var(--controls-height) + var(--floating-y));
+    align-items: start;
 
     width: 100%;
     height: 50vh;
@@ -66,6 +67,7 @@
     display: grid;
     grid-auto-flow: row;
     grid-template-columns: repeat(auto-fill, minmax(15em, 1fr));
+    grid-auto-rows: min-content;
     gap: 0.5em;
   }
 </style>
