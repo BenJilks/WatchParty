@@ -198,7 +198,7 @@ func (server *Server) ready() {
 }
 
 func (server *Server) waiting(token string) {
-	server.broadcastExcept(token, MessageWaiting, nil)
+	server.broadcastExcept(token, MessageSyncing, nil)
 }
 
 func (server *Server) handleMessage(message ServerMessage) {

@@ -22,6 +22,8 @@
   }
 
   let is_seeking = false
+  let is_waiting = true
+  const buffered_segments = reactive<BufferedSegmentData[]>([])
   const seek_bar_ref = ref<HTMLDivElement | null>(null)
   const data = reactive({
     progress: 0,
@@ -30,25 +32,6 @@
     muted: false,
     syncing: false,
   })
-
-  const buffered_segments = reactive<BufferedSegmentData[]>([])
-  function process_time_ranges(time_ranges: TimeRanges) {
-    let start = 0, end = 0
-    for (let i = 0; i < time_ranges.length; i++) {
-      start = Math.min(start, time_ranges.start(i))
-      end = Math.max(end, time_ranges.end(i))
-    }
-
-    buffered_segments.push({
-      start: start,
-      end: end,
-    })
-  }
-
-  function update_buffered_segments(video: HTMLVideoElement) {
-    buffered_segments.splice(0, buffered_segments.length)
-    process_time_ranges(video.buffered)
-  }
 
   const props = defineProps<Props>()
   const progress_factor = computed(() =>
@@ -59,25 +42,40 @@
     client.send(status, null)
   }
 
+  function update_buffered_segments(video: HTMLVideoElement) {
+    buffered_segments.splice(0, buffered_segments.length)
+
+    let start = 0, end = 0
+    for (let i = 0; i < video.buffered.length; i++) {
+      start = Math.min(start, video.buffered.start(i))
+      end = Math.max(end, video.buffered.end(i))
+    }
+
+    buffered_segments.push({
+      start: start,
+      end: end,
+    })
+  }
+
   function update_video_event_listeners(video: HTMLVideoElement) {
     video.preload = 'auto'
 
-    video.addEventListener('durationchange', () =>
-        data.duration = video.duration)
-    video.addEventListener('progress', () =>
-        update_buffered_segments(video))
+    video.addEventListener('durationchange', () => {
+      data.duration = video.duration
+    })
+
+    video.addEventListener('progress', () => {
+      update_buffered_segments(video)
+    })
 
     video.addEventListener('timeupdate', () => {
       if (!is_seeking)
         data.progress = video.currentTime
     })
 
-    let is_waiting = true
-
     async function on_waiting() {
       if (is_waiting)
         return
-
       is_waiting = true
       await send_playback_status_update('waiting')
     }
@@ -85,7 +83,6 @@
     async function on_ready() {
       if (!is_waiting)
         return
-
       is_waiting = false
       await send_playback_status_update('ready')
     }
@@ -97,39 +94,58 @@
   }
 
   function set_syncing(value: boolean) {
+    data.syncing = value
+
     const screen: Screen | null = props.screen_ref.value
     if (screen != null)
       screen.set_synchronising(value)
+  }
 
-    data.syncing = value
+  function set_is_playing(playing: boolean) {
+    const video = props.video_ref.value
+    if (video == null)
+      return
+
+    playing
+        ? video.play().catch(() => {})
+        : video.pause()
+    data.playing = !video.paused
+    data.progress = video.currentTime
+  }
+
+  async function send_video_update() {
+    const video = props.video_ref.value
+    if (video == null)
+      return
+
+    const client = await props.client_future
+    client.send<VideoStateMessage>('video', {
+      playing: !video.paused,
+      progress: data.progress,
+    })
   }
 
   watch(props.video_ref, async () => {
     const video = props.video_ref.value!
+    const client = await props.client_future
     update_video_event_listeners(video)
 
-    const client = await props.client_future
     client.on<VideoStateMessage>('video', message => {
-      const video = props.video_ref.value!
-      data.progress = message.progress
-      video.currentTime = data.progress
-
-      message.playing
-          ? video.play().catch(() => {})
-          : video.pause()
-      data.playing = message.playing
+      video.currentTime = message.progress
+      set_is_playing(message.playing)
     })
 
     client.on('syncing', () => {
       set_syncing(true)
-      if (data.playing)
-        props.video_ref.value?.pause()
+      video.pause()
     })
 
     client.on('ready', () => {
       set_syncing(false)
-      if (data.playing)
-        props.video_ref.value?.play().catch(() => {})
+      if (data.playing) {
+        video.play().catch(() =>
+            play_pause())
+      }
     })
   })
 
@@ -137,21 +153,8 @@
     if (data.syncing)
       return
 
-    const video = props.video_ref.value
-    if (video == null)
-      return
-
-    video.paused
-        ? video.play().catch(() => {})
-        : video.pause()
-    data.playing = !video.paused
-    data.progress = video.currentTime
-
-    const client = await props.client_future
-    client.send<VideoStateMessage>('video', {
-      playing: !video.paused,
-      progress: video.currentTime,
-    })
+    set_is_playing(!data.playing)
+    await send_video_update()
   }
 
   function toggle_mute() {
@@ -183,18 +186,6 @@
     is_seeking = true
   }
 
-  async function send_video_update() {
-    const video = props.video_ref.value
-    if (video == null)
-      return
-
-    const client = await props.client_future
-    client.send<VideoStateMessage>('video', {
-      playing: !video.paused,
-      progress: data.progress,
-    })
-  }
-
   window.addEventListener('mouseup', async () => {
     if (!is_seeking)
       return
@@ -209,10 +200,6 @@
 
   window.addEventListener('mousemove', event => {
     if (!is_seeking)
-      return
-
-    const video = props.video_ref.value
-    if (video == null)
       return
 
     const seek_bar = seek_bar_ref.value
