@@ -1,6 +1,7 @@
 <script setup lang="ts">
   import BufferedSegment from '@/components/Controls/BufferedSegment.vue'
   import Screen from '@/components/Screen.vue'
+  import Volume from '@/components/Controls/Volume.vue'
   import type { Ref } from 'vue'
   import { computed, reactive, ref, watch } from 'vue'
   import { SocketClient } from '@/socket_client'
@@ -270,6 +271,15 @@
     }
   }
 
+  function volume_change(volume: number) {
+    const video = props.video_ref.value
+    if (video == null)
+      return
+
+    video.volume = volume
+    video.muted = (volume == 0)
+  }
+
   defineExpose({
     change_video,
   })
@@ -292,11 +302,7 @@
     <div id="scrubber" @mousedown="on_seek_start"></div>
   </div>
 
-  <img
-      class="icon"
-      draggable="false"
-      :src="`/icons/${ data.muted ? 'mute' : 'volume' }.svg`"
-      @click="toggle_mute" />
+  <Volume @volume_change="volume_change" />
 </template>
 
 <style scoped>

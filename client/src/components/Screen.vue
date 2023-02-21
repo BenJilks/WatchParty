@@ -67,5 +67,6 @@ defineExpose({
     z-index: 1;
 
     pointer-events: none;
+    user-select: none;
   }
 </style>
