@@ -33,10 +33,8 @@
     animation_speed: 0.2,
   })
 
-  function is_space(event: Event): boolean {
-    let keyboard_event = event as KeyboardEvent
-    let key = keyboard_event.key
-    return key === ' '
+  function is_space(event: KeyboardEvent): boolean {
+    return event.code == 'Space'
   }
 
   async function update_clap_state(state: ClapState) {
