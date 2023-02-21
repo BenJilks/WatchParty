@@ -128,7 +128,7 @@
     transform: translateX(-50%);
 
     bottom: v-bind('`${ props.monkey.bottom + 1 }vh`');
-    height: v-bind('`${ props.monkey.height }vh`');
+    height: v-bind('`${ props.monkey.height * 1.1 }vh`');
     margin-left: v-bind('`${ props.monkey.x_offset }vh`');
 
     filter: brightness(0.5);
