@@ -1,39 +1,42 @@
-import type SubMenu from '@/components/Controls/SubMenu/SubMenu.vue'
-
 export type RatioButtonClick = (event: Event) => void
 
-export class RatioButtons {
+interface Tool {
+  toggle: () => void,
+  enabled: boolean,
+}
 
-  private readonly sub_menus: SubMenu[]
+export class RatioButtons<T extends Tool> {
+
+  private readonly tools: T[]
   private selected_button?: HTMLElement
-  private selected_sub_menu?: SubMenu
+  private selected_tool?: T
 
   public constructor() {
-    this.sub_menus = []
+    this.tools = []
   }
 
-  private hide_other_sub_menus(sub_menu: SubMenu) {
-    for (const other_sub_menu of this.sub_menus) {
-      if (other_sub_menu == sub_menu || !other_sub_menu.show)
+  private hide_other_sub_menus(tool: T) {
+    for (const other_tool of this.tools) {
+      if (other_tool == tool || !other_tool.enabled)
         continue
-      other_sub_menu.toggle()
+      other_tool.toggle()
     }
   }
 
-  public add(sub_menu: SubMenu): RatioButtonClick {
-    this.sub_menus.push(sub_menu)
+  public add(tool: T): RatioButtonClick {
+    this.tools.push(tool)
     return (event: Event) => {
-      if (this.selected_sub_menu == sub_menu) {
+      if (this.selected_tool == tool) {
         this.close_current()
         return
       }
 
       this.selected_button?.classList.remove('selected')
-      sub_menu.toggle()
+      tool.toggle()
 
-      this.hide_other_sub_menus(sub_menu)
+      this.hide_other_sub_menus(tool)
       this.selected_button = event.target as HTMLElement
-      this.selected_sub_menu = sub_menu
+      this.selected_tool = tool
       this.selected_button.classList.add('selected')
     }
   }
@@ -42,12 +45,12 @@ export class RatioButtons {
     this.selected_button?.classList.remove('selected')
     this.selected_button = undefined
 
-    this.selected_sub_menu?.toggle()
-    this.selected_sub_menu = undefined
+    this.selected_tool?.toggle()
+    this.selected_tool = undefined
   }
 
-  public is_sub_menu_open(): boolean {
-    return this.selected_sub_menu != undefined
+  public is_any_selected(): boolean {
+    return this.selected_tool != undefined
   }
 
 }

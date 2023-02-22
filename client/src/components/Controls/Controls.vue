@@ -4,6 +4,7 @@
   import VideoMenu from '@/components/Controls/SubMenu/VideoMenu.vue'
   import Screen from '@/components/Screen.vue'
   import AnnotationMenu from '@/components/Controls/SubMenu/AnnotationMenu.vue'
+  import SubMenu from '@/components/Controls/SubMenu/SubMenu.vue'
   import type { Ref } from 'vue'
   import type { RatioButtonClick } from '@/components/Controls/SubMenu/RatioButtons'
   import { SocketClient } from '@/socket_client'
@@ -27,7 +28,7 @@
   const annotations_menu = ref<AnnotationMenu>()
   const toggle_video_menu = ref<RatioButtonClick>()
   const toggle_annotation_menu = ref<RatioButtonClick>()
-  const ratio_buttons = new RatioButtons()
+  const ratio_buttons = new RatioButtons<SubMenu>()
 
   function change_video(video_file: string) {
     console.log(`Selected video: '${ video_file }'`)
@@ -51,7 +52,7 @@
       return
     if (!visible && video_controls.value?.get_is_seeking())
       return
-    if (!visible && ratio_buttons.is_sub_menu_open())
+    if (!visible && ratio_buttons.is_any_selected())
       return
 
     const controls = controls_ref.value!

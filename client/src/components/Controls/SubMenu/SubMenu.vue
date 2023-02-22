@@ -19,9 +19,10 @@ function toggle() {
   }
 }
 
+const enabled = ref(show)
 defineExpose({
   toggle,
-  show,
+  enabled,
 })
 </script>
 
@@ -39,7 +40,7 @@ defineExpose({
 
   width: 100%;
   height: v-bind('height');
-  padding: 2em;
+  padding: 0.2em;
 
   transition:
       opacity 0.2s,
