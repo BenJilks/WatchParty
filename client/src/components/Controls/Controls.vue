@@ -2,7 +2,7 @@
   import VideoControls from '@/components/Controls/Video/VideoControls.vue'
   import Chat from '@/components/Controls/Chat.vue'
   import VideoMenu from '@/components/Controls/SubMenu/VideoMenu.vue'
-  import Screen from '@/components/Screen.vue'
+  import Screen from '@/components/Controls/Screen/Screen.vue'
   import AnnotationMenu from '@/components/Controls/SubMenu/AnnotationMenu.vue'
   import SubMenu from '@/components/Controls/SubMenu/SubMenu.vue'
   import type { Ref } from 'vue'
@@ -66,8 +66,8 @@
   }
 
   onMounted(async () => {
-    toggle_video_menu.value = ratio_buttons.add(video_menu.value!.sub_menu)
-    toggle_annotation_menu.value = ratio_buttons.add(annotations_menu.value!.sub_menu)
+    toggle_video_menu.value = ratio_buttons.add(video_menu.value!)
+    toggle_annotation_menu.value = ratio_buttons.add(annotations_menu.value!)
 
     window.addEventListener('mousemove', event => {
       const controls = controls_ref.value!
@@ -114,11 +114,12 @@
     </div>
 
     <VideoMenu
-      ref="video_menu"
-      :client_future="client_future"
-      @selected="video_selected" />
+        ref="video_menu"
+        :client_future="client_future"
+        @selected="video_selected" />
     <AnnotationMenu
-      ref="annotations_menu" />
+        :tools="computed(() => screen_ref.value.tools)"
+        ref="annotations_menu" />
   </div>
 </template>
 

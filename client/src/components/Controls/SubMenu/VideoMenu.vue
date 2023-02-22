@@ -2,7 +2,7 @@
   import VideoItem from '@/components/Controls/Video/VideoItem.vue'
   import SubMenu from '@/components/Controls/SubMenu/SubMenu.vue'
   import type { VideoData } from '@/components/Controls/Video/VideoItem.vue'
-  import { reactive, ref } from 'vue'
+  import {computed, reactive, ref} from 'vue'
   import { SocketClient } from '@/socket_client'
 
   interface Props {
@@ -39,9 +39,10 @@
   }
 
   const toggle = () => sub_menu.value?.toggle()
+  const enabled = computed(() => sub_menu.value?.enabled)
   defineExpose({
     toggle,
-    sub_menu,
+    enabled,
   })
 
   request_video_list()

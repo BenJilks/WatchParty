@@ -1,14 +1,37 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import {computed, ref} from 'vue'
+import TextTool from '@/components/Controls/Screen/TextTool'
+import LineTool from '@/components/Controls/Screen/LineTool'
+import AnnotationTool from '@/components/Controls/Screen/AnnotationTool'
+import type {CursorProperty} from "csstype";
 
 const video_ref = ref<HTMLVideoElement | null>(null)
 const synchronising = ref(true)
 const needs_focus = ref(false)
 
+const tools = ref<{[name: string]: AnnotationTool}>({
+  text: new TextTool(),
+  line: new LineTool(),
+})
+
+function current_tool(): AnnotationTool | undefined {
+  for (const name in tools.value) {
+    const tool = tools.value[name]
+    if (tool.enabled)
+      return tool
+  }
+
+  return undefined
+}
+
+const current_cursor = computed(() =>
+    current_tool()?.cursor ?? 'default')
+
 defineExpose({
   set_synchronising: (value: boolean) => synchronising.value = value,
   set_needs_focus: (value: boolean) => needs_focus.value = value,
   video_ref,
+  tools,
 })
 </script>
 
@@ -43,6 +66,8 @@ defineExpose({
     background-color: #0a0a0aff;
     box-shadow: 0 0 5vh 2vh #6666;
     border-radius: 0.5vh;
+
+    cursor: v-bind('current_cursor');
   }
 
   .screen video {

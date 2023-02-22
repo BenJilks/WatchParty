@@ -2,7 +2,7 @@
 import Seats from '@/components/Seats.vue'
 import Stage from '@/components/Stage.vue'
 import Controls from '@/components/Controls/Controls.vue'
-import Screen from '@/components/Screen.vue'
+import Screen from '@/components/Controls/Screen/Screen.vue'
 import { open_socket_client } from '@/socket_client'
 import { computed, onMounted, reactive, ref } from 'vue'
 
