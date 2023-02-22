@@ -1,14 +1,15 @@
 <script setup lang="ts">
-import {reactive, ref} from 'vue'
+  import { computed, ref } from 'vue'
+
   interface Emits {
     (e: 'volume_change', volume: number): void
   }
-
   const emit = defineEmits<Emits>()
+
   const volume = ref(1)
-  const show_slider = ref(false)
+  const over_slider = ref(false)
   const volume_bar_ref = ref<HTMLDivElement | null>(null)
-  let is_dragging = false
+  const is_dragging = ref(false)
 
   function toggle_mute() {
     volume.value = volume.value > 0 ? 0 : 1
@@ -16,18 +17,17 @@ import {reactive, ref} from 'vue'
   }
 
   function mouse_enter() {
-    show_slider.value = true
+    over_slider.value = true
   }
 
   function mouse_leave() {
-    if (!is_dragging)
-      show_slider.value = false
+    over_slider.value = false
   }
 
   window.addEventListener('mousemove', (event: MouseEvent) => {
     if (volume_bar_ref.value == null || event.buttons != 1)
       return
-    is_dragging = true
+    is_dragging.value = true
 
     const volume_bar = volume_bar_ref.value
     const rect = volume_bar?.getBoundingClientRect()
@@ -38,10 +38,10 @@ import {reactive, ref} from 'vue'
   })
 
   window.addEventListener('mouseup', () => {
-    is_dragging = false
-    show_slider.value = false
+    is_dragging.value = false
   })
 
+  const show_slider = computed(() => over_slider.value || is_dragging.value)
   defineExpose({
     show_slider,
   })

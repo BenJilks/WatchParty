@@ -52,7 +52,7 @@ defineExpose({
 
 <template>
   <div class="screen" ref="screen_ref" @click="screen_click">
-    <video ref="video_ref">
+    <video ref="video_ref" preload="auto" oncontextmenu="return false;">
       <source :src="'/vids/[Rhythm Heaven] - Fan Club (Perfect) (English)-DNbvktlB0gU.mp4'" type="video/mp4">
     </video>
     <div v-if="synchronising && !needs_focus" class="overlay">

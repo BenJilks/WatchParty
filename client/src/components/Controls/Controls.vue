@@ -16,15 +16,9 @@
     client_future: Promise<SocketClient>,
   }
 
-  type RequestPlayMessage = {
-    playing: boolean,
-    progress: number,
-    video?: string,
-  }
-
   const video_controls = ref<VideoControls>()
   const select_menu_open_ref = ref(false)
-  const props = defineProps<Props>()
+  defineProps<Props>()
 
   const video_menu = ref<VideoMenu>()
   const annotations_menu = ref<AnnotationMenu>()

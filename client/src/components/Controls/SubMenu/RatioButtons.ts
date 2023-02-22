@@ -37,6 +37,7 @@ export class RatioButtons<T extends Tool> {
 
   public is_any_selected(): boolean {
     return this.selected_tool != undefined
+        && this.selected_tool.enabled
   }
 
 }
