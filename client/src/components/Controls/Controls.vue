@@ -46,7 +46,27 @@
     })
   }
 
+  const controls_ref = ref<HTMLDivElement | null>(null)
+  const controls_indicator_ref = ref<HTMLDivElement | null>(null)
+  function set_controls_visible(visible: boolean) {
+    const controls = controls_ref.value!
+    const translation = visible
+        ? '0'
+        : `calc(var(--controls-height) + var(--floating-y))`
+    controls.style.transform = `translateY(${ translation })`
+
+    const controls_indicator = controls_indicator_ref.value!
+    controls_indicator.style.opacity = `${ visible ? 0 : 0.4 }`
+  }
+
   onMounted(async () => {
+    window.addEventListener('mousemove', event => {
+      const controls = controls_ref.value!
+      const height = controls.getBoundingClientRect().height * 6
+      const show_controls = (event.screenY >= window.innerHeight - height)
+      set_controls_visible(show_controls)
+    })
+
     const client = await props.client_future
     client.on<ChangeVideoMessage>('video-change', message => {
       change_video(message.video_file)
@@ -55,7 +75,8 @@
 </script>
 
 <template>
-  <div class="controls">
+  <div ref="controls_indicator_ref" class="controls-indicator"></div>
+  <div ref="controls_ref" class="controls">
     <div class="panel">
       <Chat :client_future="client_future" />
     </div>
@@ -103,6 +124,23 @@
     width: calc(100% - var(--floating-x)*2);
     bottom: var(--floating-y);
     left: var(--floating-x);
+
+    transition: transform 0.2s;
+    transform: translateY(calc(var(--controls-height) + var(--floating-y)));
+  }
+
+  .controls-indicator {
+    position: fixed;
+    height: 2em;
+    bottom: -1em;
+    left: 10em;
+    right: 10em;
+
+    border-radius: 1em;
+    background-color: #fff;
+
+    transition: opacity 0.2s;
+    opacity: 0.3;
   }
 
   #video-panel {
