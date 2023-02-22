@@ -71,9 +71,12 @@ import {reactive, ref} from 'vue'
     position: relative;
     cursor: default;
     padding: 0 0.6em;
+    width: 4em;
   }
 
   .icon img {
+    width: 100%;
+    aspect-ratio: 1/1;
     position: relative;
     cursor: pointer;
     pointer-events: all;
