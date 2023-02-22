@@ -40,6 +40,10 @@ import {reactive, ref} from 'vue'
     is_dragging = false
     show_slider.value = false
   })
+
+  defineExpose({
+    show_slider,
+  })
 </script>
 
 <template>

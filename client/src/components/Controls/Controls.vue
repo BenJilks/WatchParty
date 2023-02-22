@@ -1,11 +1,14 @@
 <script setup lang="ts">
-  import VideoControls from '@/components/Controls/VideoControls.vue'
+  import VideoControls from '@/components/Controls/Video/VideoControls.vue'
   import Chat from '@/components/Controls/Chat.vue'
-  import SelectMenu from '@/components/Controls/SelectMenu.vue'
+  import VideoMenu from '@/components/Controls/SubMenu/VideoMenu.vue'
   import Screen from '@/components/Screen.vue'
+  import AnnotationMenu from '@/components/Controls/SubMenu/AnnotationMenu.vue'
   import type { Ref } from 'vue'
+  import type { RatioButtonClick } from '@/components/Controls/SubMenu/RatioButtons'
   import { SocketClient } from '@/socket_client'
-  import {computed, onMounted, ref} from 'vue'
+  import { computed, onMounted, ref } from 'vue'
+  import { RatioButtons } from '@/components/Controls/SubMenu/RatioButtons'
 
   interface Props {
     screen_ref: Ref<Screen | null>,
@@ -16,29 +19,24 @@
     video_file: string,
   }
 
-  const select_menu_ref = ref<SelectMenu | null>(null)
-  const video_controls_ref = ref<VideoControls | null>(null)
+  const video_controls = ref<VideoControls>()
   const select_menu_open_ref = ref(false)
   const props = defineProps<Props>()
 
-  function toggle_select_menu() {
-    const select_menu = select_menu_ref.value
-    if (select_menu != null) {
-      select_menu_open_ref.value = !select_menu_open_ref.value
-      select_menu?.toggle()
-    }
-  }
+  const video_menu = ref<VideoMenu>()
+  const annotations_menu = ref<AnnotationMenu>()
+  const toggle_video_menu = ref<RatioButtonClick>()
+  const toggle_annotation_menu = ref<RatioButtonClick>()
+  const ratio_buttons = new RatioButtons()
 
   function change_video(video_file: string) {
     console.log(`Selected video: '${ video_file }'`)
-    const video_controls = video_controls_ref.value
-    if (video_controls != null)
-      video_controls.change_video(video_file)
+    video_controls.value?.change_video(video_file)
   }
 
   async function video_selected(video_file: string) {
     change_video(video_file)
-    toggle_select_menu()
+    ratio_buttons.close_current()
 
     const client = await props.client_future
     client.send<ChangeVideoMessage>('video-change', {
@@ -49,6 +47,13 @@
   const controls_ref = ref<HTMLDivElement | null>(null)
   const controls_indicator_ref = ref<HTMLDivElement | null>(null)
   function set_controls_visible(visible: boolean) {
+    if (!visible && video_controls.value?.volume_slider_open())
+      return
+    if (!visible && video_controls.value?.get_is_seeking())
+      return
+    if (!visible && ratio_buttons.is_sub_menu_open())
+      return
+
     const controls = controls_ref.value!
     const translation = visible
         ? '0'
@@ -60,6 +65,9 @@
   }
 
   onMounted(async () => {
+    toggle_video_menu.value = ratio_buttons.add(video_menu.value!.sub_menu)
+    toggle_annotation_menu.value = ratio_buttons.add(annotations_menu.value!.sub_menu)
+
     window.addEventListener('mousemove', event => {
       const controls = controls_ref.value!
       const height = controls.getBoundingClientRect().height * 6
@@ -83,7 +91,7 @@
 
     <div id="video-panel" class="panel">
       <VideoControls
-          ref="video_controls_ref"
+          ref="video_controls"
           :screen_ref="computed(() => screen_ref.value)"
           :video_ref="computed(() => screen_ref.value?.video_ref)"
           :client_future="client_future" />
@@ -92,16 +100,24 @@
     <div class="panel">
       <img
           class="icon"
+          id="annotate-button"
+          src="/icons/edit.png"
+          @click="toggle_annotation_menu"
+          alt="" />
+      <img
+          class="icon"
           id="menu-button"
           src="/icons/up.svg"
-          @click="toggle_select_menu"
+          @click="toggle_video_menu"
           alt="" />
     </div>
 
-    <SelectMenu
-        ref="select_menu_ref"
-        :client_future="client_future"
-        @selected="video_selected" />
+    <VideoMenu
+      ref="video_menu"
+      :client_future="client_future"
+      @selected="video_selected" />
+    <AnnotationMenu
+      ref="annotations_menu" />
   </div>
 </template>
 
@@ -109,9 +125,7 @@
   * {
     --floating-x: 3em;
     --floating-y: 2em;
-
     --controls-height: 3em;
-    --panel-color: #FFFb;
   }
 
   .controls {

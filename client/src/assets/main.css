@@ -4,6 +4,9 @@
     --curtain-offset: -3vh;
     --front-board-height: 6vh;
 
+    --panel-color: #fffb;
+    --selected-color: #fffe;
+
     box-sizing: border-box;
 }
 
@@ -35,4 +38,9 @@ html, body {
     padding: 0.5em 1em;
     border-radius: 0.5em;
     background-color: var(--panel-color);
+}
+
+.panel .selected {
+    border-radius: 0.5em;
+    background-color: var(--selected-color);
 }

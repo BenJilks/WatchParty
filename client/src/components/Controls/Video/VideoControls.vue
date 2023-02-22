@@ -1,7 +1,7 @@
 <script setup lang="ts">
-  import BufferedSegment from '@/components/Controls/BufferedSegment.vue'
+  import BufferedSegment from '@/components/Controls/Video/BufferedSegment.vue'
   import Screen from '@/components/Screen.vue'
-  import Volume from '@/components/Controls/Volume.vue'
+  import Volume from '@/components/Controls/Video/Volume.vue'
   import type { Ref } from 'vue'
   import { computed, reactive, ref, watch } from 'vue'
   import { SocketClient } from '@/socket_client'
@@ -280,8 +280,14 @@
     video.muted = (volume == 0)
   }
 
+  const volume = ref<Volume>()
+  const volume_slider_open = () => volume.value?.show_slider
+  const get_is_seeking = () => is_seeking
+
   defineExpose({
     change_video,
+    volume_slider_open,
+    get_is_seeking,
   })
 </script>
 
@@ -302,7 +308,7 @@
     <div id="scrubber" @mousedown="on_seek_start"></div>
   </div>
 
-  <Volume @volume_change="volume_change" />
+  <Volume ref="volume" @volume_change="volume_change" />
 </template>
 
 <style scoped>
