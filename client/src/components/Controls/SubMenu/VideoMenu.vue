@@ -64,9 +64,10 @@
   #content-list {
     width: 100%;
     height: 100%;
+
     overflow-y: auto;
     border-radius: 1em;
-    margin: 2em;
+    padding: 2em;
 
     display: grid;
     grid-auto-flow: row;

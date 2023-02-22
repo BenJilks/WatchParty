@@ -1,3 +1,7 @@
+* {
+    box-sizing: border-box;
+}
+
 body {
     --seat-height: 20vh;
     --floor-height: 23vh;
@@ -6,8 +10,6 @@ body {
 
     --panel-color: #fffb;
     --selected-color: #fffe;
-
-    box-sizing: border-box;
 }
 
 img {
