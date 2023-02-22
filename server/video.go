@@ -33,7 +33,6 @@ func readVideoFrame(path string, outputPath string) error {
 		Filter("scale", ffmpeg.Args{fmt.Sprintf("%d:-1", ThumbnailScale)}).
 		Output(outputPath, ffmpeg.KwArgs{"frames:v": 1, "format": "image2", "vcodec": "mjpeg"}).
 		OverWriteOutput().
-		Compile().
 		Run()
 }
 

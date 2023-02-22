@@ -4,7 +4,11 @@
   import { reactive, ref } from 'vue'
 
   const CHAT_MESSAGE_TIME_MS = 2500
-  const CLAP_TIME = 150
+  const CLAP_TIME = 300
+
+  const IDLE_OFFSET = 1
+  const CLAP_READY_OFFSET = 3
+  const CLAP_OFFSET = 3
 
   interface Props {
     monkey: MonkeyData,
@@ -25,8 +29,12 @@
   }
 
   const props = defineProps<Props>()
-  const sprite = reactive({ name: Sprite.Idle })
   const monkey_image_ref = ref<HTMLInputElement | null>(null)
+  const sprite = reactive({
+    name: Sprite.Idle,
+    offset: IDLE_OFFSET,
+  })
+
   const chat_message_enabled = ref(false)
   const chat_message = reactive({
     message: '',
@@ -46,19 +54,26 @@
     })
   }
 
+  let idle_timeout: number | undefined = undefined
+
   function clap_down() {
     sprite.name = Sprite.Ready
+    sprite.offset = CLAP_READY_OFFSET
     update_clap_state('ready')
+    clearTimeout(idle_timeout)
   }
 
   function clap_up() {
     sprite.name = Sprite.Clap
+    sprite.offset = CLAP_OFFSET
     update_clap_state('clap')
 
     const monkey_image = monkey_image_ref.value!
     monkey_image.onload = () => {
-      setTimeout(() => sprite.name = Sprite.Idle,
-          CLAP_TIME)
+      idle_timeout = setTimeout(() => {
+        sprite.name = Sprite.Idle
+        sprite.offset = IDLE_OFFSET
+      }, CLAP_TIME)
       monkey_image.onload = null
     }
   }
@@ -95,11 +110,16 @@
       switch (message.state) {
         case 'ready':
           sprite.name = Sprite.Ready
+          sprite.offset = CLAP_READY_OFFSET
           break
         case 'clap':
           sprite.name = Sprite.Clap
-          setTimeout(() =>
-              sprite.name = Sprite.Idle, CLAP_TIME)
+          sprite.offset = CLAP_OFFSET
+
+          setTimeout(() => {
+            sprite.name = Sprite.Idle
+            sprite.offset = IDLE_OFFSET
+          }, CLAP_TIME)
           break
       }
     })
@@ -134,7 +154,7 @@
     left: 50%;
     transform: translateX(-50%);
 
-    bottom: v-bind('`${ props.monkey.bottom + 1 }vh`');
+    bottom: v-bind('`${ props.monkey.bottom + sprite.offset }vh`');
     height: v-bind('`${ props.monkey.height * 1.1 }vh`');
     margin-left: v-bind('`${ props.monkey.x_offset }vh`');
 
