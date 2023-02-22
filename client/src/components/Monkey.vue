@@ -108,19 +108,28 @@
         return
 
       switch (message.state) {
-        case 'ready':
+        case 'ready': {
           sprite.name = Sprite.Ready
           sprite.offset = CLAP_READY_OFFSET
+          clearTimeout(idle_timeout)
           break
-        case 'clap':
+        }
+
+        case 'clap': {
           sprite.name = Sprite.Clap
           sprite.offset = CLAP_OFFSET
 
-          setTimeout(() => {
-            sprite.name = Sprite.Idle
-            sprite.offset = IDLE_OFFSET
-          }, CLAP_TIME)
+          const monkey_image = monkey_image_ref.value!
+          monkey_image.onload = () => {
+            idle_timeout = setTimeout(() => {
+              sprite.name = Sprite.Idle
+              sprite.offset = IDLE_OFFSET
+            }, CLAP_TIME)
+            monkey_image.onload = null
+          }
+
           break
+        }
       }
     })
 
