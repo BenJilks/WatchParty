@@ -3,9 +3,11 @@ import type { CursorProperty } from 'csstype'
 export default abstract class AnnotationTool {
 
     private is_enabled: boolean
+    protected readonly screen: HTMLDivElement
 
-    public constructor() {
+    public constructor(screen: HTMLDivElement) {
         this.is_enabled = false
+        this.screen = screen
     }
 
     public toggle() {
@@ -23,5 +25,7 @@ export default abstract class AnnotationTool {
     public abstract get cursor(): CursorProperty
     public abstract get name(): string
     public abstract get icon(): string
+
+    public abstract on_click(x: number, y: number): void
 
 }

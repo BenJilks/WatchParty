@@ -1,17 +1,21 @@
 <script setup lang="ts">
-import {computed, ref} from 'vue'
+import {computed, onMounted, ref} from 'vue'
 import TextTool from '@/components/Controls/Screen/TextTool'
 import LineTool from '@/components/Controls/Screen/LineTool'
 import AnnotationTool from '@/components/Controls/Screen/AnnotationTool'
 import type {CursorProperty} from "csstype";
 
-const video_ref = ref<HTMLVideoElement | null>(null)
+const screen_ref = ref<HTMLDivElement>()
+const video_ref = ref<HTMLVideoElement>()
 const synchronising = ref(true)
 const needs_focus = ref(false)
 
-const tools = ref<{[name: string]: AnnotationTool}>({
-  text: new TextTool(),
-  line: new LineTool(),
+const tools = ref<{[name: string]: AnnotationTool}>({})
+onMounted(() => {
+  tools.value = {
+    text: new TextTool(screen_ref.value!),
+    line: new LineTool(screen_ref.value!),
+  }
 })
 
 function current_tool(): AnnotationTool | undefined {
@@ -27,6 +31,17 @@ function current_tool(): AnnotationTool | undefined {
 const current_cursor = computed(() =>
     current_tool()?.cursor ?? 'default')
 
+function screen_click(event: MouseEvent) {
+  const tool = current_tool()
+  if (tool === undefined)
+    return
+
+  const screen_rect = video_ref.value?.getBoundingClientRect()
+  const screen_x = screen_rect?.x ?? 0
+  const screen_y = screen_rect?.y ?? 0
+  tool.on_click(event.clientX - screen_x, event.clientY - screen_y)
+}
+
 defineExpose({
   set_synchronising: (value: boolean) => synchronising.value = value,
   set_needs_focus: (value: boolean) => needs_focus.value = value,
@@ -36,7 +51,7 @@ defineExpose({
 </script>
 
 <template>
-  <div class="screen">
+  <div class="screen" ref="screen_ref" @click="screen_click">
     <video ref="video_ref">
       <source :src="'/vids/[Rhythm Heaven] - Fan Club (Perfect) (English)-DNbvktlB0gU.mp4'" type="video/mp4">
     </video>
@@ -68,6 +83,12 @@ defineExpose({
     border-radius: 0.5vh;
 
     cursor: v-bind('current_cursor');
+    overflow: hidden;
+  }
+
+  .screen * {
+    text-wrap: none;
+    word-break: keep-all;
   }
 
   .screen video {

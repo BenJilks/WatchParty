@@ -15,4 +15,14 @@ export default class TextTool extends AnnotationTool {
         return 'text.svg'
     }
 
+    public on_click(x: number, y: number) {
+        const text = document.createElement('text')
+        text.innerText = 'Hello, Tools!!!'
+        text.style.position = 'absolute'
+        text.style.top = `${ y }px`
+        text.style.left = `${ x }px`
+        text.style.color = 'white'
+        this.screen.append(text)
+    }
+
 }

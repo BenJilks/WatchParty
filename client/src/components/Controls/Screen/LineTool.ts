@@ -15,4 +15,8 @@ export default class LineTool extends AnnotationTool {
         return 'up.svg'
     }
 
+    public on_click(x: number, y: number) {
+        console.log(x, y)
+    }
+
 }
