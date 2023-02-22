@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	log "github.com/sirupsen/logrus"
 )
 
 type ClapMessage struct {
@@ -66,6 +67,9 @@ func handleClient(client Client, serverMessage chan<- ServerMessage, videos []Vi
 			}
 
 		case MessageVideoList:
+			log.WithField("count", len(videos)).
+				Info("Responded to video list request")
+
 			_ = client.Send(MessageVideoList, VideoListMessage{
 				Videos: videos,
 			})
