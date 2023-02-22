@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
+	log "github.com/sirupsen/logrus"
 	"net/http"
 	"nhooyr.io/websocket"
 )
@@ -48,6 +48,8 @@ func handleSocketConnection(
 	request *http.Request,
 	clients chan<- Client,
 ) {
+	log.Info("Opening new web socket connection")
+
 	connection, err := websocket.Accept(response, request, nil)
 	if err != nil {
 		log.Println(err)
@@ -69,19 +71,20 @@ func handleSocketConnection(
 	for {
 		_, content, err := connection.Read(requestContext)
 		if err != nil {
-			fmt.Println(err)
+			log.WithError(err).Info()
 			break
 		}
 
 		var message Message
 		if err := json.Unmarshal(content, &message); err != nil {
-			fmt.Println(err)
+			log.WithError(err).Error("Unable to decode JSON message")
 			continue
 		}
 
 		messages <- message
 	}
 
+	log.Info("Socket connection closed")
 	messages <- Message{
 		Type: MessageDisconnect,
 	}
@@ -100,7 +103,10 @@ func handleConnection(response http.ResponseWriter, request *http.Request, clien
 
 func StartSocketServer(address string, certFile string, keyFile string, clients chan<- Client) {
 	useTLS := certFile != "" && keyFile != ""
-	fmt.Printf("Server running on '%s', TLS: %t\n", address, useTLS)
+	log.WithFields(log.Fields{
+		"address": address,
+		"TLS":     useTLS,
+	}).Info("Started listening for connections")
 
 	handler := http.HandlerFunc(
 		func(response http.ResponseWriter, request *http.Request) {

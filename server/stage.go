@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	log "github.com/sirupsen/logrus"
 	"math/rand"
 )
 
@@ -73,8 +73,11 @@ func (stage *Stage) PlaceViewer(token string) {
 	}
 
 	seat := stage.seatsUsed[token]
-	fmt.Printf("Placed '%s' in row %d, seat %d\n",
-		token, seat.Row, seat.Column)
+	log.WithFields(log.Fields{
+		"token": token,
+		"row":   seat.Row,
+		"seat":  seat.Column,
+	}).Info("Assigned seat")
 }
 
 func (stage *Stage) RemovePlayer(token string) {

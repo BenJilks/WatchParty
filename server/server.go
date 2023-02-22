@@ -3,7 +3,7 @@ package main
 import (
 	"crypto/rand"
 	"encoding/hex"
-	"fmt"
+	log "github.com/sirupsen/logrus"
 	"time"
 )
 
@@ -58,7 +58,7 @@ func (server *Server) updateSeats() {
 
 func (server *Server) generateNewToken() string {
 	for {
-		tokenBytes := make([]byte, 16)
+		tokenBytes := make([]byte, 8)
 		if _, err := rand.Read(tokenBytes); err != nil {
 			panic(err)
 		}
@@ -74,7 +74,6 @@ func (server *Server) generateNewToken() string {
 
 func (server *Server) join(client *Client) {
 	token := server.generateNewToken()
-	fmt.Printf("Joining watch party with token '%s'\n", token)
 
 	client.Token = &token
 	server.connectedClients[token] = client
@@ -94,8 +93,6 @@ func (server *Server) join(client *Client) {
 }
 
 func (server *Server) leave(token string) {
-	fmt.Printf("'%s', leaving watch party\n", token)
-
 	if _, has := server.connectedClients[token]; has {
 		delete(server.connectedClients, token)
 	}
@@ -146,6 +143,13 @@ func (server *Server) chat(token string, message string) {
 		return
 	}
 
+	log.WithFields(log.Fields{
+		"token":   token,
+		"message": message,
+		"row":     seat.Row,
+		"seat":    seat.Column,
+	}).Trace("Send chat message")
+
 	server.broadcastExcept("", MessageChat, ChatResponseMessage{
 		Message: message,
 		Row:     seat.Row,
@@ -154,6 +158,19 @@ func (server *Server) chat(token string, message string) {
 }
 
 func (server *Server) video(token string, playing bool, progress float64) {
+	if server.videoState.Playing && !playing {
+		log.WithField("token", token).Trace("Paused")
+	}
+	if !server.videoState.Playing && playing {
+		log.WithField("token", token).Trace("Resumed")
+	}
+	if server.videoState.Progress != progress {
+		log.WithFields(log.Fields{
+			"token":    token,
+			"progress": progress,
+		}).Trace("Seeked")
+	}
+
 	videoFile := server.videoState.VideoFile
 	server.videoState = VideoState{
 		Playing:            playing,
@@ -176,6 +193,11 @@ func (server *Server) videoChange(token string, videoFile string) {
 		VideoFile:          videoFile,
 	}
 
+	log.WithFields(log.Fields{
+		"token": token,
+		"video": videoFile,
+	}).Info("Changed video")
+
 	for _, client := range server.connectedClients {
 		client.Ready = false
 	}
@@ -186,8 +208,9 @@ func (server *Server) videoChange(token string, videoFile string) {
 }
 
 func (server *Server) ready() {
-	for _, client := range server.connectedClients {
+	for token, client := range server.connectedClients {
 		if !client.Ready {
+			log.WithField("token", token).Info("Is still buffering")
 			return
 		}
 	}
@@ -196,6 +219,7 @@ func (server *Server) ready() {
 }
 
 func (server *Server) waiting(token string) {
+	log.WithField("token", token).Info("Waiting for buffering")
 	server.broadcastExcept(token, MessageSyncing, nil)
 }
 
