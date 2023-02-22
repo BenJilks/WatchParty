@@ -16,8 +16,10 @@
     client_future: Promise<SocketClient>,
   }
 
-  type ChangeVideoMessage = {
-    video_file: string,
+  type RequestPlayMessage = {
+    playing: boolean,
+    progress: number,
+    video?: string,
   }
 
   const video_controls = ref<VideoControls>()
@@ -38,11 +40,6 @@
   async function video_selected(video_file: string) {
     change_video(video_file)
     ratio_buttons.close_current()
-
-    const client = await props.client_future
-    client.send<ChangeVideoMessage>('video-change', {
-      video_file: video_file,
-    })
   }
 
   const controls_ref = ref<HTMLDivElement | null>(null)
@@ -74,11 +71,6 @@
       const height = controls.getBoundingClientRect().height * 6
       const show_controls = (event.screenY >= window.innerHeight - height)
       set_controls_visible(show_controls)
-    })
-
-    const client = await props.client_future
-    client.on<ChangeVideoMessage>('video-change', message => {
-      change_video(message.video_file)
     })
   })
 </script>

@@ -14,10 +14,8 @@ const (
 	ServerMessageLeave
 	ServerMessageClap
 	ServerMessageChat
-	ServerMessageVideo
-	ServerMessageVideoChange
+	ServerMessageRequestPlay
 	ServerMessageReady
-	ServerMessageWaiting
 )
 
 type ServerMessage struct {
@@ -31,7 +29,7 @@ type ServerMessage struct {
 	Playing  bool
 	Progress float64
 
-	VideoFile string
+	VideoFile *string
 }
 
 type Server struct {
@@ -81,15 +79,15 @@ func (server *Server) join(client *Client) {
 	server.updateSeats()
 	server.updateVideoState()
 
-	videoMessage := VideoMessage{
-		Playing:  server.videoState.Playing,
-		Progress: server.videoState.Progress,
+	for _, client := range server.connectedClients {
+		client.Ready = false
 	}
-	videoChangeMessage := VideoChangeMessage{
-		VideoFile: server.videoState.VideoFile,
-	}
-	_ = client.Send(MessageVideoChange, videoChangeMessage)
-	_ = client.Send(MessageVideo, videoMessage)
+
+	_ = client.Send(MessageRequestPlay, RequestPlayMessage{
+		Playing:   server.videoState.Playing,
+		Progress:  server.videoState.Progress,
+		VideoFile: &server.videoState.VideoFile,
+	})
 }
 
 func (server *Server) leave(token string) {
@@ -157,70 +155,65 @@ func (server *Server) chat(token string, message string) {
 	})
 }
 
-func (server *Server) video(token string, playing bool, progress float64) {
-	if server.videoState.Playing && !playing {
-		log.WithField("token", token).Trace("Paused")
-	}
-	if !server.videoState.Playing && playing {
-		log.WithField("token", token).Trace("Resumed")
-	}
-	if server.videoState.Progress != progress {
-		log.WithFields(log.Fields{
-			"token":    token,
-			"progress": progress,
-		}).Trace("Seeked")
-	}
-
-	videoFile := server.videoState.VideoFile
-	server.videoState = VideoState{
-		Playing:            playing,
-		Progress:           progress,
-		LastProgressUpdate: time.Now(),
-		VideoFile:          videoFile,
-	}
-
-	server.broadcastExcept(token, MessageVideo, VideoMessage{
-		Playing:  playing,
-		Progress: progress,
-	})
-}
-
-func (server *Server) videoChange(token string, videoFile string) {
-	server.videoState = VideoState{
-		Playing:            true,
-		Progress:           0,
-		LastProgressUpdate: time.Now(),
-		VideoFile:          videoFile,
+func (server *Server) logRequest(message ServerMessage) {
+	videoFile := "None"
+	if message.VideoFile != nil {
+		videoFile = *message.VideoFile
 	}
 
 	log.WithFields(log.Fields{
-		"token": token,
-		"video": videoFile,
-	}).Info("Changed video")
+		"token":    *message.Token,
+		"playing":  message.Playing,
+		"progress": message.Progress,
+		"video":    videoFile,
+	}).Info("Got play request")
+}
+
+func (server *Server) requestPlay(message ServerMessage) {
+	server.logRequest(message)
+
+	videoFile := server.videoState.VideoFile
+	if message.VideoFile != nil {
+		videoFile = *message.VideoFile
+	}
+
+	server.videoState = VideoState{
+		Playing:            message.Playing,
+		Progress:           message.Progress,
+		VideoFile:          videoFile,
+		LastProgressUpdate: time.Now(),
+	}
 
 	for _, client := range server.connectedClients {
 		client.Ready = false
 	}
 
-	server.broadcastExcept(token, MessageVideoChange, VideoChangeMessage{
-		VideoFile: videoFile,
+	server.broadcastExcept(*message.Token, MessageRequestPlay, RequestPlayMessage{
+		Playing:   message.Playing,
+		Progress:  message.Progress,
+		VideoFile: message.VideoFile,
 	})
 }
 
-func (server *Server) ready() {
-	for token, client := range server.connectedClients {
+func (server *Server) ready(token string) {
+	allClientsReady := true
+	for clientToken, client := range server.connectedClients {
+		if token == clientToken {
+			log.WithField("token", clientToken).Info("Reported as ready")
+			client.Ready = true
+			continue
+		}
+
 		if !client.Ready {
-			log.WithField("token", token).Info("Is still buffering")
-			return
+			allClientsReady = false
+			log.WithField("token", clientToken).Info("Is still buffering")
 		}
 	}
 
-	server.broadcastExcept("", MessageReady, nil)
-}
-
-func (server *Server) waiting(token string) {
-	log.WithField("token", token).Info("Waiting for buffering")
-	server.broadcastExcept(token, MessageSyncing, nil)
+	if allClientsReady {
+		log.Info("All clients are ready, playing request")
+		server.broadcastExcept("", MessageReady, nil)
+	}
 }
 
 func (server *Server) handleMessage(message ServerMessage) {
@@ -233,14 +226,10 @@ func (server *Server) handleMessage(message ServerMessage) {
 		server.clap(*message.Token, message.State)
 	case ServerMessageChat:
 		server.chat(*message.Token, message.Message)
-	case ServerMessageVideo:
-		server.video(*message.Token, message.Playing, message.Progress)
-	case ServerMessageVideoChange:
-		server.videoChange(*message.Token, message.VideoFile)
+	case ServerMessageRequestPlay:
+		server.requestPlay(message)
 	case ServerMessageReady:
-		server.ready()
-	case ServerMessageWaiting:
-		server.waiting(*message.Token)
+		server.ready(*message.Token)
 	default:
 		panic(message)
 	}

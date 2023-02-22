@@ -25,6 +25,8 @@ export class SocketClient {
                 return
 
             const data = JSON.parse(atob(message.data))
+            console.log(`Got '${ message.type }': ${ atob(message.data) }`)
+
             for (const listener of listeners.values())
                 listener(data)
         })
@@ -74,6 +76,27 @@ export class SocketClient {
         }
     }
 
+    public async send_with_response<S, R extends object>(send_type: string,
+                                                         response_type: string,
+                                                         message: S): Promise<R> {
+        return new Promise(resolve => {
+            this.send<S>(send_type, message)
+
+            const id = this.on<R>(response_type, response => {
+                this.off(id)
+                resolve(response)
+            })
+        })
+    }
+
+    public async response<T extends object>(type: string): Promise<T> {
+        return new Promise(resolve => {
+            const id = this.on<T>(type, response => {
+                this.off(id)
+                resolve(response)
+            })
+        })
+    }
 }
 
 export function open_socket_client(): Promise<SocketClient> {

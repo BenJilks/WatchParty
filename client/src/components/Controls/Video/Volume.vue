@@ -12,6 +12,7 @@ import {reactive, ref} from 'vue'
 
   function toggle_mute() {
     volume.value = volume.value > 0 ? 0 : 1
+    emit('volume_change', volume.value)
   }
 
   function mouse_enter() {

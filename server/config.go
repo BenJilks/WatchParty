@@ -6,12 +6,9 @@ const (
 	MessageUpdateState = MessageType("update-state")
 	MessageClap        = MessageType("clap")
 	MessageChat        = MessageType("chat")
-	MessageVideo       = MessageType("video")
 	MessageVideoList   = MessageType("video-list")
-	MessageVideoChange = MessageType("video-change")
+	MessageRequestPlay = MessageType("request-play")
 	MessageReady       = MessageType("ready")
-	MessageWaiting     = MessageType("waiting")
-	MessageSyncing     = MessageType("syncing")
 	MessageDisconnect  = MessageType("disconnect")
 )
 

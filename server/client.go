@@ -14,17 +14,14 @@ type ChatMessage struct {
 	Message string `json:"message"`
 }
 
-type VideoMessage struct {
-	Playing  bool    `json:"playing"`
-	Progress float64 `json:"progress"`
+type RequestPlayMessage struct {
+	Playing   bool    `json:"playing"`
+	Progress  float64 `json:"progress"`
+	VideoFile *string `json:"video"`
 }
 
 type VideoListMessage struct {
 	Videos []VideoData `json:"videos"`
-}
-
-type VideoChangeMessage struct {
-	VideoFile string `json:"video_file"`
 }
 
 func handleClient(client Client, serverMessage chan<- ServerMessage, videos []VideoData) {
@@ -34,6 +31,11 @@ func handleClient(client Client, serverMessage chan<- ServerMessage, videos []Vi
 	}
 
 	for message := range client.Messages {
+		log.WithFields(log.Fields{
+			"token": *client.Token,
+			"type":  message.Type,
+		}).Trace("Got message")
+
 		switch message.Type {
 		case MessageClap:
 			var clapMessage ClapMessage
@@ -55,17 +57,6 @@ func handleClient(client Client, serverMessage chan<- ServerMessage, videos []Vi
 				Message: chatMessage.Message,
 			}
 
-		case MessageVideo:
-			var videoMessage VideoMessage
-			_ = json.Unmarshal(message.Data, &videoMessage)
-
-			serverMessage <- ServerMessage{
-				Type:     ServerMessageVideo,
-				Token:    client.Token,
-				Playing:  videoMessage.Playing,
-				Progress: videoMessage.Progress,
-			}
-
 		case MessageVideoList:
 			log.WithField("count", len(videos)).
 				Info("Responded to video list request")
@@ -74,26 +65,21 @@ func handleClient(client Client, serverMessage chan<- ServerMessage, videos []Vi
 				Videos: videos,
 			})
 
-		case MessageVideoChange:
-			var videoChangeMessage VideoChangeMessage
-			_ = json.Unmarshal(message.Data, &videoChangeMessage)
+		case MessageRequestPlay:
+			var requestMessage RequestPlayMessage
+			_ = json.Unmarshal(message.Data, &requestMessage)
 
 			serverMessage <- ServerMessage{
-				Type:      ServerMessageVideoChange,
+				Type:      ServerMessageRequestPlay,
 				Token:     client.Token,
-				VideoFile: videoChangeMessage.VideoFile,
+				Playing:   requestMessage.Playing,
+				Progress:  requestMessage.Progress,
+				VideoFile: requestMessage.VideoFile,
 			}
 
 		case MessageReady:
-			client.Ready = true
 			serverMessage <- ServerMessage{
-				Type: ServerMessageReady,
-			}
-
-		case MessageWaiting:
-			client.Ready = false
-			serverMessage <- ServerMessage{
-				Type:  ServerMessageWaiting,
+				Type:  ServerMessageReady,
 				Token: client.Token,
 			}
 

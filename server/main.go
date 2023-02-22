@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	log "github.com/sirupsen/logrus"
 )
 
 func main() {
@@ -11,6 +12,7 @@ func main() {
 	port := flag.Uint("port", 8080, "Port")
 	videosPath := flag.String("vids", "../client/dist/vids", "Path to videos")
 	flag.Parse()
+	log.SetLevel(log.TraceLevel)
 
 	videos, err := GenerateThumbnails(*videosPath)
 	if err != nil {
