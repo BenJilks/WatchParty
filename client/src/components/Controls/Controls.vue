@@ -2,7 +2,7 @@
   import VideoControls from '@/components/Controls/Video/VideoControls.vue'
   import Chat from '@/components/Controls/Chat.vue'
   import VideoMenu from '@/components/Controls/SubMenu/VideoMenu.vue'
-  import Screen from '@/components/Controls/Screen/Screen.vue'
+  import Screen from '@/components/Controls/Screen.vue'
   import AnnotationMenu from '@/components/Controls/SubMenu/AnnotationMenu.vue'
   import SubMenu from '@/components/Controls/SubMenu/SubMenu.vue'
   import type { Ref } from 'vue'

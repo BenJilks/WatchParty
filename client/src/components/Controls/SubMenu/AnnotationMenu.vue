@@ -1,6 +1,6 @@
 <script setup lang="ts">
   import SubMenu from '@/components/Controls/SubMenu/SubMenu.vue'
-  import AnnotationTool from '@/components/Controls/Screen/AnnotationTool'
+  import AnnotationTool from '@/components/Controls/Drawing/AnnotationTool'
   import type { RatioButtonClick } from '@/components/Controls/SubMenu/RatioButtons'
   import type { Ref } from 'vue'
   import { computed, onMounted, ref } from 'vue'

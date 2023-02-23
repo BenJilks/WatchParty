@@ -1,6 +1,6 @@
 <script setup lang="ts">
   import BufferedSegment from '@/components/Controls/Video/BufferedSegment.vue'
-  import Screen from '@/components/Controls/Screen/Screen.vue'
+  import Screen from '@/components/Controls/Screen.vue'
   import Volume from '@/components/Controls/Video/Volume.vue'
   import type { Ref } from 'vue'
   import { computed, reactive, ref, watch } from 'vue'

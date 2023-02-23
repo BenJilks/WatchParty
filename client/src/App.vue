@@ -2,13 +2,13 @@
 import Seats from '@/components/Seats.vue'
 import Stage from '@/components/Stage.vue'
 import Controls from '@/components/Controls/Controls.vue'
-import Screen from '@/components/Controls/Screen/Screen.vue'
-import { open_socket_client } from '@/socket_client'
-import { computed, onMounted, reactive, ref } from 'vue'
+import Screen from '@/components/Controls/Screen.vue'
+import { computed, inject, onMounted, ref } from 'vue'
+import {SocketClient} from "@/socket_client";
 
 const screen_ref = ref<Screen | null>(null)
 const seats_ref = ref<Seats>()
-const client_future = reactive(open_socket_client())
+const client_future = inject<Promise<SocketClient>>('client_future')
 
 onMounted(async () => {
   try {

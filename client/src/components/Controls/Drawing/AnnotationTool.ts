@@ -1,20 +1,21 @@
 import type { CursorProperty } from 'csstype'
 
+export interface Position {
+    x: number,
+    y: number,
+}
+
 export default abstract class AnnotationTool {
 
     private is_enabled: boolean
-    protected readonly screen: HTMLDivElement
+    protected readonly context: CanvasRenderingContext2D
 
-    public constructor(screen: HTMLDivElement) {
+    public constructor(context: CanvasRenderingContext2D) {
         this.is_enabled = false
-        this.screen = screen
+        this.context = context
     }
 
     public toggle() {
-        if (!this.enabled)
-            console.log(`Selected tool ${ this.name }`)
-        else
-            console.log(`Deselected tool ${ this.name }`)
         this.is_enabled = !this.is_enabled
     }
 
@@ -26,6 +27,8 @@ export default abstract class AnnotationTool {
     public abstract get name(): string
     public abstract get icon(): string
 
-    public abstract on_click(x: number, y: number): void
+    public on_mouse_down(mouse: Position) {}
+    public on_mouse_up(mouse: Position) {}
+    public on_mouse_move(mouse: Position) {}
 
 }
