@@ -48,10 +48,8 @@
 </script>
 
 <template>
-  <div class="icon"
-       @mouseenter="mouse_enter"
-       @mouseleave="mouse_leave">
-    <div id="slider">
+  <div class="icon" @mouseenter="mouse_enter">
+    <div id="slider" @mouseleave="mouse_leave">
       <div v-if="show_slider" id="bar" ref="volume_bar_ref">
         <div id="marker"></div>
         <div id="done"></div>
@@ -75,11 +73,13 @@
   }
 
   .icon img {
-    width: 100%;
-    aspect-ratio: 1/1;
     position: relative;
+    width: 100%;
+    padding: 0em 0.2em;
+
+    object-fit: contain;
     cursor: pointer;
-    pointer-events: all;
+    pointer-events: none;
   }
 
   #slider {
@@ -101,6 +101,7 @@
     background-color: #fffe;
 
     cursor: pointer;
+    pointer-events: all;
   }
 
   #volume {
