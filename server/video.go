@@ -11,9 +11,6 @@ import (
 	"time"
 )
 
-const ThumbnailFrameNumber = 20
-const ThumbnailScale = 400
-
 type VideoState struct {
 	Playing            bool
 	Progress           float64

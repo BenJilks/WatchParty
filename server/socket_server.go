@@ -103,8 +103,13 @@ func handleConnection(response http.ResponseWriter, request *http.Request, clien
 
 func StartSocketServer(address string, certFile string, keyFile string, clients chan<- Client) {
 	useTLS := certFile != "" && keyFile != ""
+	addressFormat := "http://%s"
+	if useTLS {
+		addressFormat = "https://%s"
+	}
+
 	log.WithFields(log.Fields{
-		"address": address,
+		"address": fmt.Sprintf(addressFormat, address),
 		"TLS":     useTLS,
 	}).Info("Started listening for connections")
 

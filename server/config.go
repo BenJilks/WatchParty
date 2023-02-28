@@ -1,5 +1,9 @@
 package main
 
+const DefaultVidsPath = "../client/dist/vids"
+const ThumbnailFrameNumber = 20
+const ThumbnailScale = 400
+
 const (
 	MessageUpdateState = MessageType("update-state")
 	MessageClap        = MessageType("clap")

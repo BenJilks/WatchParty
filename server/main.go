@@ -10,7 +10,7 @@ func main() {
 	certFile := flag.String("cert", "", "TLS cert file")
 	keyFile := flag.String("key", "", "TLS key file")
 	port := flag.Uint("port", 8080, "Port")
-	videosPath := flag.String("vids", "../client/dist/vids", "Path to videos")
+	videosPath := flag.String("vids", DefaultVidsPath, "Path to videos")
 	flag.Parse()
 	log.SetLevel(log.TraceLevel)
 
