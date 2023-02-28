@@ -29,6 +29,10 @@ defineExpose({
             Click Anywhere to Play
         </div>
     </div>
+
+    <ControlsPanel
+        :screen="ref(screen)"
+        :client_future="client_future" />
 </template>
 
 <style scoped>

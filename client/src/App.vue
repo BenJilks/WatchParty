@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import SeatingArea from '@/components/SeatingArea.vue'
-import StageBackground from '@/components/StageBackground.vue'
+import SeatingArea from '@/components/Stage/Seats/SeatingArea.vue'
+import StageBackground from '@/components/Stage/StageBackground.vue'
 import ControlsPanel from '@/components/Controls/ControlsPanel.vue'
-import StageScreen from '@/components/Controls/StageScreen.vue'
+import StageScreen from '@/components/Stage/StageScreen.vue'
 import type { SocketClient } from "@/socket_client";
 import { inject, ref } from 'vue'
 

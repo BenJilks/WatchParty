@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import SeatRow from '@/components/SeatRow.vue'
+import SeatRow from '@/components/Stage/Seats/SeatRow.vue'
 import type { SocketClient } from '@/socket_client'
 import { onMounted, ref } from 'vue'
 import { seats_in_row } from '@/monkey'

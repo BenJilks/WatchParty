@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import BufferedSegment from '@/components/Controls/Video/BufferedSegment.vue'
 import VolumeSlider from '@/components/Controls/Video/VolumeSlider.vue'
-import type StageScreen from '@/components/Controls/StageScreen.vue'
+import type StageScreen from '@/components/Stage/StageScreen.vue'
 import type { SocketClient } from '@/socket_client'
 import type { Ref } from 'vue'
 import { computed, reactive, ref, watch } from 'vue'

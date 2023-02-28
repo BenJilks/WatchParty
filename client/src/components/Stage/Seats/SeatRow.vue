@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import Monkey from "@/components/ViewerMonkey.vue"
+import Monkey from "@/components/Stage/Seats/ViewerMonkey.vue"
 import type { MonkeyData } from '@/monkey'
 import type { SocketClient } from '@/socket_client'
 import { reactive } from 'vue'

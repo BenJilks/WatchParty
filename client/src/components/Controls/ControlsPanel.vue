@@ -3,7 +3,7 @@ import VideoMenu from '@/components/Controls/SubMenu/VideoMenu.vue'
 import AnnotationMenu from '@/components/Controls/SubMenu/AnnotationMenu.vue'
 import VideoControls from '@/components/Controls/Video/VideoControls.vue'
 import ChatBox from '@/components/Controls/ChatBox.vue'
-import type StageScreen from '@/components/Controls/StageScreen.vue'
+import type StageScreen from '@/components/Stage/StageScreen.vue'
 import type { Ref } from 'vue'
 import type { RatioButtonClick } from '@/components/Controls/SubMenu/RatioButtons'
 import type { SocketClient } from '@/socket_client'
@@ -15,14 +15,17 @@ interface Props {
     client_future: Promise<SocketClient>,
 }
 
-const video_controls = ref<typeof VideoControls>()
-defineProps<Props>()
-
-const video_menu = ref<InstanceType<typeof VideoMenu>>()
-const annotations_menu = ref<InstanceType<typeof AnnotationMenu>>()
 const toggle_video_menu = ref<RatioButtonClick>()
 const toggle_annotation_menu = ref<RatioButtonClick>()
+const video_menu = ref<InstanceType<typeof VideoMenu>>()
+const annotations_menu = ref<InstanceType<typeof AnnotationMenu>>()
 const ratio_buttons = new RatioButtons()
+
+const controls = ref<HTMLDivElement>()
+const controls_indicator = ref<HTMLDivElement>()
+
+const video_controls = ref<typeof VideoControls>()
+defineProps<Props>()
 
 function change_video(video_file: string) {
     console.log(`Selected video: '${ video_file }'`)
@@ -34,8 +37,6 @@ async function video_selected(video_file: string) {
     ratio_buttons.close_current()
 }
 
-const controls = ref<HTMLDivElement>()
-const controls_indicator = ref<HTMLDivElement>()
 function set_controls_visible(visible: boolean) {
     if (controls.value === undefined || controls_indicator.value === undefined) {
         return
