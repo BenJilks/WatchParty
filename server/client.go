@@ -43,7 +43,7 @@ func handleClient(client Client, serverMessage chan<- ServerMessage, videos []Vi
 
 			serverMessage <- ServerMessage{
 				Type:  ServerMessageClap,
-				Token: &clapMessage.Token,
+				Token: client.Token,
 				State: clapMessage.State,
 			}
 
