@@ -40,7 +40,7 @@ func (client *Client) Send(messageType MessageType, data interface{}) error {
 	}
 
 	return client.Connection.Write(
-		*client.Context, websocket.MessageText, messageJson)
+		*client.Context, websocket.MessageBinary, messageJson)
 }
 
 func handleSocketConnection(

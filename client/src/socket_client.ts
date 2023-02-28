@@ -1,6 +1,36 @@
 
-export interface Message {
-    type: string,
+function code_point_length(byte: number) {
+    if ((byte & 0b11000000) == 0b10000000) return 0
+    if ((byte & 0b11100000) == 0b11000000) return 2
+    if ((byte & 0b11110000) == 0b11100000) return 3
+    if ((byte & 0b11111000) == 0b11110000) return 4
+    return 1
+}
+
+function decode_utf8_base64(encoded_data: string): string {
+    let decoded_string = ''
+
+    const decoded_bytes = atob(encoded_data)
+    for (let i = 0; i < decoded_bytes.length; i++) {
+        const byte = decoded_bytes.charCodeAt(i)
+        const length = code_point_length(byte)
+        if (length == 0) {
+            console.error(`Invalid codepoint at index ${ i }`)
+            continue
+        }
+
+        if (length == 1) {
+            decoded_string += String.fromCharCode(byte)
+            continue
+        }
+
+        let codepoint = (byte & 0xff >> length+1) << (length - 1) * 6
+        for (let j = length - 2; j >= 0; --j)
+            codepoint |= (decoded_bytes.charCodeAt(++i) & 0b00111111) << (j * 6)
+        decoded_string += String.fromCharCode(codepoint)
+    }
+
+    return decoded_string
 }
 
 export class SocketClient {
@@ -14,9 +44,10 @@ export class SocketClient {
         this.listener_id_to_type_map = new Map()
         this.start_message_listener()
     }
+
     private start_message_listener() {
-        this.socket.addEventListener('message', event => {
-            const message = JSON.parse(event.data)
+        this.socket.addEventListener('message', async event => {
+            const message = JSON.parse(await event.data.text())
             if (!('type' in message))
                 return
 
@@ -24,13 +55,15 @@ export class SocketClient {
             if (listeners === undefined)
                 return
 
-            const data = JSON.parse(atob(message.data))
-            console.log(`Got '${ message.type }': ${ atob(message.data) }`)
+            const text_data = decode_utf8_base64(message.data)
+            console.log(`Got '${ message.type }': ${ text_data }`)
 
+            const data = JSON.parse(text_data)
             for (const listener of listeners.values())
                 listener(data)
         })
     }
+
     private generateID(): number {
         for (;;) {
             const id = Math.random() * Number.MAX_VALUE
@@ -39,6 +72,7 @@ export class SocketClient {
             }
         }
     }
+
     public on<T extends object>(type: string, callback: (t: T) => void): number {
         const id = this.generateID()
 
@@ -52,6 +86,7 @@ export class SocketClient {
 
         return id
     }
+
     public off(id: number) {
         const type = this.listener_id_to_type_map.get(id)
         if (type === undefined)
@@ -74,28 +109,6 @@ export class SocketClient {
         } catch (error) {
             console.error(error)
         }
-    }
-
-    public async send_with_response<S, R extends object>(send_type: string,
-                                                         response_type: string,
-                                                         message: S): Promise<R> {
-        return new Promise(resolve => {
-            this.send<S>(send_type, message)
-
-            const id = this.on<R>(response_type, response => {
-                this.off(id)
-                resolve(response)
-            })
-        })
-    }
-
-    public async response<T extends object>(type: string): Promise<T> {
-        return new Promise(resolve => {
-            const id = this.on<T>(type, response => {
-                this.off(id)
-                resolve(response)
-            })
-        })
     }
 }
 
