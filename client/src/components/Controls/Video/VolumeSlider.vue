@@ -60,7 +60,9 @@ defineExpose({
             id="volume"
             draggable="false"
             :src="`/icons/${ volume === 0 ? 'mute' : 'volume' }.svg`"
-            @click="toggle_mute" />
+            @mouseenter="mouse_enter"
+            @click="toggle_mute"
+            alt="volume" />
     </div>
 </template>
 
@@ -79,7 +81,7 @@ defineExpose({
 
     object-fit: contain;
     cursor: pointer;
-    pointer-events: none;
+    pointer-events: all;
 }
 
 #slider {
