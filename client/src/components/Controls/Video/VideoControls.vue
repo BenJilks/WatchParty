@@ -55,7 +55,11 @@ function update_buffered_segments(video: HTMLVideoElement) {
 
 function set_syncing(value: boolean) {
     data.syncing = value
-    props.screen.value?.set_synchronising(value)
+    if (value) {
+        props.screen.value?.set_overlay_message('Syncing Playback...')
+    } else {
+        props.screen.value?.set_overlay_message(undefined)
+    }
 }
 
 async function set_needs_focus(error: DOMException) {
@@ -70,7 +74,7 @@ async function set_needs_focus(error: DOMException) {
         data.playing = true
 
         client.send('ready', null)
-        props.screen.value?.set_needs_focus(false)
+        props.screen.value?.set_overlay_message(undefined)
     }
 
     const client = await props.client_future
@@ -80,11 +84,15 @@ async function set_needs_focus(error: DOMException) {
     })
 
     window.addEventListener('click', give_focus)
-    props.screen.value?.set_needs_focus(true)
+    props.screen.value?.set_overlay_message('Click Here to Play')
 }
 
 async function send_when_ready() {
     const video = props.video.value
+    if (video?.src === undefined || video.src == '') {
+        props.screen.value?.set_overlay_message('No Video Selected')
+        return
+    }
 
     async function ready_to_play() {
         const client = await props.client_future

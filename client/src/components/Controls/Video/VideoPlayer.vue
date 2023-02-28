@@ -9,7 +9,7 @@ defineExpose({
 
 <template>
     <video ref="video" preload="auto" oncontextmenu="return false;">
-        <source :src="'/vids/[Rhythm Heaven] - Fan Club (Perfect) (English)-DNbvktlB0gU.mp4'" type="video/mp4">
+        <source src="" />
     </video>
 </template>
 

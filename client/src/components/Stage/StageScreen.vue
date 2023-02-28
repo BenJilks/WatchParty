@@ -7,12 +7,11 @@ const screen = ref<HTMLDivElement>()
 const video_player = ref<typeof VideoPlayer>()
 const drawing = ref<typeof Drawing>()
 
-const synchronising = ref(true)
-const needs_focus = ref(false)
+const overlay_message = ref<string | undefined>()
+const show_overlay_message = computed(() => overlay_message.value !== undefined)
 
 defineExpose({
-    set_synchronising: (value: boolean) => synchronising.value = value,
-    set_needs_focus: (value: boolean) => needs_focus.value = value,
+    set_overlay_message: (value: string | undefined) => overlay_message.value = value,
     video: computed(() => video_player.value?.video),
     tools: computed(() => drawing.value?.tools),
 })
@@ -22,11 +21,8 @@ defineExpose({
     <div class="screen" ref="screen">
         <VideoPlayer ref="video_player" />
         <Drawing ref="drawing" />
-        <div v-if="synchronising && !needs_focus" class="overlay">
-            Synchronising Viewers...
-        </div>
-        <div v-if="needs_focus" class="overlay">
-            Click Anywhere to Play
+        <div v-if="show_overlay_message" class="overlay">
+            {{ overlay_message }}
         </div>
     </div>
 </template>

@@ -81,13 +81,12 @@ func (server *Server) join(client *Client) {
 
 	for _, client := range server.connectedClients {
 		client.Ready = false
+		_ = client.Send(MessageRequestPlay, RequestPlayMessage{
+			Playing:   server.videoState.Playing,
+			Progress:  server.videoState.Progress,
+			VideoFile: &server.videoState.VideoFile,
+		})
 	}
-
-	_ = client.Send(MessageRequestPlay, RequestPlayMessage{
-		Playing:   server.videoState.Playing,
-		Progress:  server.videoState.Progress,
-		VideoFile: &server.videoState.VideoFile,
-	})
 }
 
 func (server *Server) leave(token string) {
@@ -245,7 +244,7 @@ func StartServer(messages <-chan ServerMessage) {
 			Playing:            false,
 			Progress:           0,
 			LastProgressUpdate: time.Now(),
-			VideoFile:          DefaultVideoFile,
+			VideoFile:          "",
 		},
 	}
 

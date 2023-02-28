@@ -1,7 +1,5 @@
 package main
 
-const DefaultVideoFile = "[Rhythm Heaven] - Fan Club (Perfect) (English)-DNbvktlB0gU.mp4"
-
 const (
 	MessageUpdateState = MessageType("update-state")
 	MessageClap        = MessageType("clap")
