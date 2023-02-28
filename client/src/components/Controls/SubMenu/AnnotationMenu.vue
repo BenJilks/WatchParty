@@ -4,10 +4,11 @@ import type AnnotationTool from '@/components/Controls/Drawing/AnnotationTool'
 import type { RatioButtonClick } from '@/components/Controls/SubMenu/RatioButtons'
 import type { Ref } from 'vue'
 import { RatioButtons } from '@/components/Controls/SubMenu/RatioButtons'
-import { computed, onMounted, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 interface Props {
     tools: Ref<{[name: string]: AnnotationTool}>,
+    ratio_buttons: Ref<RatioButtons<any>>,
 }
 
 interface ToolButton {
@@ -20,7 +21,7 @@ const props = defineProps<Props>()
 const tool_callbacks = ref<ToolButton[]>()
 
 const ratio_buttons = new RatioButtons()
-onMounted(() => {
+watch(props.tools, () => {
     tool_callbacks.value = Object.keys(props.tools.value)
         .map(key => props.tools.value[key])
         .map(tool => ({
@@ -29,20 +30,22 @@ onMounted(() => {
         }))
 })
 
-function toggle() {
-    ratio_buttons.close_current()
-    sub_menu.value?.toggle()
-}
-
-const enabled = computed(() => sub_menu.value?.enabled)
-defineExpose({
-    toggle,
-    enabled,
+watch(sub_menu, () => {
+    const button = sub_menu.value?.button
+    watch(button, () => {
+        button.value?.addEventListener('click', () =>
+            ratio_buttons.close_current())
+    })
 })
 </script>
 
 <template>
-    <SubMenu ref="sub_menu" height="auto">
+    <SubMenu
+        ref="sub_menu"
+        height="auto"
+        :ratio_buttons="computed(() => props.ratio_buttons.value)"
+        icon="edit.png">
+
         <div id="annotation-menu">
             <img
                 v-for="(button, i) in tool_callbacks"

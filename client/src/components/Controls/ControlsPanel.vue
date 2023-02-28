@@ -5,7 +5,6 @@ import VideoControls from '@/components/Controls/Video/VideoControls.vue'
 import ChatBox from '@/components/Controls/ChatBox.vue'
 import type StageScreen from '@/components/Stage/StageScreen.vue'
 import type { Ref } from 'vue'
-import type { RatioButtonClick } from '@/components/Controls/SubMenu/RatioButtons'
 import type { SocketClient } from '@/socket_client'
 import { computed, onMounted, ref } from 'vue'
 import { RatioButtons } from '@/components/Controls/SubMenu/RatioButtons'
@@ -15,12 +14,7 @@ interface Props {
     client_future: Promise<SocketClient>,
 }
 
-const toggle_video_menu = ref<RatioButtonClick>()
-const toggle_annotation_menu = ref<RatioButtonClick>()
-const video_menu = ref<InstanceType<typeof VideoMenu>>()
-const annotations_menu = ref<InstanceType<typeof AnnotationMenu>>()
-const ratio_buttons = new RatioButtons()
-
+const ratio_buttons = ref(new RatioButtons())
 const controls = ref<HTMLDivElement>()
 const controls_indicator = ref<HTMLDivElement>()
 
@@ -34,7 +28,7 @@ function change_video(video_file: string) {
 
 async function video_selected(video_file: string) {
     change_video(video_file)
-    ratio_buttons.close_current()
+    ratio_buttons.value.close_current()
 }
 
 function set_controls_visible(visible: boolean) {
@@ -46,7 +40,7 @@ function set_controls_visible(visible: boolean) {
         return
     if (!visible && video_controls.value?.get_is_seeking())
         return
-    if (!visible && ratio_buttons.is_any_selected())
+    if (!visible && ratio_buttons.value.is_any_selected())
         return
 
     const translation = visible
@@ -57,9 +51,6 @@ function set_controls_visible(visible: boolean) {
 }
 
 onMounted(async () => {
-    toggle_video_menu.value = ratio_buttons.add(video_menu.value!!)
-    toggle_annotation_menu.value = ratio_buttons.add(annotations_menu.value!!)
-
     window.addEventListener('mousemove', event => {
         const height = (controls.value?.getBoundingClientRect()?.height ?? 0) * 6
         const show_controls = (event.screenY >= window.innerHeight - height)
@@ -84,27 +75,14 @@ onMounted(async () => {
         </div>
 
         <div class="panel">
-            <img
-                class="icon"
-                id="annotate-button"
-                src="/icons/edit.png"
-                @click="toggle_annotation_menu"
-                alt="" />
-            <img
-                class="icon"
-                id="menu-button"
-                src="/icons/up.svg"
-                @click="toggle_video_menu"
-                alt="" />
-        </div>
-
-        <VideoMenu
-                ref="video_menu"
-                :client_future="client_future"
-                @selected="video_selected" />
-        <AnnotationMenu
+            <AnnotationMenu
                 :tools="computed(() => screen.value?.tools)"
-                ref="annotations_menu" />
+                :ratio_buttons="computed(() => ratio_buttons)" />
+            <VideoMenu
+                :client_future="client_future"
+                :ratio_buttons="computed(() => ratio_buttons)"
+                @selected="video_selected" />
+        </div>
     </div>
 </template>
 

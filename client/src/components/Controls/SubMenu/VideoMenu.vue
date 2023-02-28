@@ -3,10 +3,13 @@ import VideoItem from '@/components/Controls/Video/VideoItem.vue'
 import SubMenu from '@/components/Controls/SubMenu/SubMenu.vue'
 import type { VideoData } from '@/components/Controls/Video/VideoItem.vue'
 import type { SocketClient } from '@/socket_client'
-import { computed, reactive, ref } from 'vue'
+import type { RatioButtons } from '@/components/Controls/SubMenu/RatioButtons'
+import type { Ref } from 'vue'
+import {computed, reactive, ref} from 'vue'
 
 interface Props {
     client_future: Promise<SocketClient>,
+    ratio_buttons: Ref<RatioButtons<any>>,
 }
 
 interface Emits {
@@ -38,18 +41,16 @@ function selected(video_file: string) {
     emit('selected', video_file)
 }
 
-const toggle = () => sub_menu.value?.toggle()
-const enabled = computed(() => sub_menu.value?.enabled)
-defineExpose({
-    toggle,
-    enabled,
-})
-
 request_video_list()
 </script>
 
 <template>
-    <SubMenu ref="sub_menu" height="50vh">
+    <SubMenu
+        ref="sub_menu"
+        height="50vh"
+        :ratio_buttons="computed(() => ratio_buttons.value)"
+        icon="up.svg">
+
         <div id="content-list">
             <VideoItem
                 v-for="video in video_list"
