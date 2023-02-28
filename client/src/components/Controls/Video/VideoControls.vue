@@ -101,7 +101,7 @@ async function send_when_ready() {
     }
 
     video?.addEventListener('canplaythrough', ready_to_play)
-    if (video?.readyState ?? 0 >= HTMLMediaElement.HAVE_FUTURE_DATA) {
+    if ((video?.readyState ?? 0) >= HTMLMediaElement.HAVE_FUTURE_DATA) {
         await ready_to_play()
     }
 }
@@ -149,23 +149,16 @@ watch(props.video, async () => {
             data.progress = video.currentTime
     })
 
-    const client = await props.client_future
-
-    video.addEventListener('waiting', force_sync_while_waiting)
-    function force_sync_while_waiting() {
-        video.removeEventListener('waiting', force_sync_while_waiting)
-        client.send('request-play', {
-            playing: data.playing,
-            progress: data.progress,
-        })
-
-        video.addEventListener('canplaythrough', playing)
-        function playing() {
-            client.send('ready', null)
-            video.removeEventListener('canplaythrough', playing)
+    video.addEventListener('waiting', () => {
+        if (!data.syncing) {
+            send_request_play({
+                playing: data.playing,
+                progress: data.progress,
+            })
         }
-    }
+    })
 
+    const client = await props.client_future
     client.on<RequestPlayMessage>('request-play', handle_request_play)
     client.on('ready', () => {
         data.playing
