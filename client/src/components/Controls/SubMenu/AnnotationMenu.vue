@@ -1,66 +1,67 @@
 <script setup lang="ts">
-  import SubMenu from '@/components/Controls/SubMenu/SubMenu.vue'
-  import AnnotationTool from '@/components/Controls/Drawing/AnnotationTool'
-  import type { RatioButtonClick } from '@/components/Controls/SubMenu/RatioButtons'
-  import type { Ref } from 'vue'
-  import { computed, onMounted, ref } from 'vue'
-  import { RatioButtons } from '@/components/Controls/SubMenu/RatioButtons'
+import SubMenu from '@/components/Controls/SubMenu/SubMenu.vue'
+import type AnnotationTool from '@/components/Controls/Drawing/AnnotationTool'
+import type { RatioButtonClick } from '@/components/Controls/SubMenu/RatioButtons'
+import type { Ref } from 'vue'
+import { RatioButtons } from '@/components/Controls/SubMenu/RatioButtons'
+import { computed, onMounted, ref } from 'vue'
 
-  interface Props {
+interface Props {
     tools: Ref<{[name: string]: AnnotationTool}>,
-  }
+}
 
-  interface ToolButton {
+interface ToolButton {
     callback: RatioButtonClick,
     tool: AnnotationTool,
-  }
+}
 
-  const sub_menu = ref<SubMenu>()
-  const props = defineProps<Props>()
-  const tool_callbacks = ref<ToolButton[]>()
+const sub_menu = ref<typeof SubMenu>()
+const props = defineProps<Props>()
+const tool_callbacks = ref<ToolButton[]>()
 
-  const ratio_buttons = new RatioButtons()
-  onMounted(() => {
+const ratio_buttons = new RatioButtons()
+onMounted(() => {
     tool_callbacks.value = Object.keys(props.tools.value)
         .map(key => props.tools.value[key])
         .map(tool => ({
-          callback: ratio_buttons.add(tool),
-          tool: tool,
+            callback: ratio_buttons.add(tool),
+            tool: tool,
         }))
-  })
+})
 
-  function toggle() {
+function toggle() {
     ratio_buttons.close_current()
     sub_menu.value?.toggle()
-  }
+}
 
-  const enabled = computed(() => sub_menu.value?.enabled)
-  defineExpose({
+const enabled = computed(() => sub_menu.value?.enabled)
+defineExpose({
     toggle,
     enabled,
-  })
+})
 </script>
 
 <template>
-  <SubMenu ref="sub_menu" height="auto">
-    <div id="annotation-menu">
-      <img
-          v-for="(button, i) in tool_callbacks"
-          :key="i"
-          :src="`/icons/${ button.tool.icon }`"
-          class="icon"
-          draggable="false"
-          @click="button.callback" />
-    </div>
-  </SubMenu>
+    <SubMenu ref="sub_menu" height="auto">
+        <div id="annotation-menu">
+            <img
+                v-for="(button, i) in tool_callbacks"
+                :key="i"
+                :src="`/icons/${ button.tool.icon }`"
+                class="icon"
+                draggable="false"
+                @click="button.callback"
+                :alt="button.tool.name" />
+        </div>
+    </SubMenu>
 </template>
 
 <style scoped>
-  #annotation-menu {
+#annotation-menu {
     display: flex;
     gap: 1em;
 
     height: 3em;
     padding: 0.5em 1em;
-  }
+}
 </style>

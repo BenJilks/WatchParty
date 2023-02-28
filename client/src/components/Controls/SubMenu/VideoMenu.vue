@@ -1,67 +1,67 @@
 <script setup lang="ts">
-  import VideoItem from '@/components/Controls/Video/VideoItem.vue'
-  import SubMenu from '@/components/Controls/SubMenu/SubMenu.vue'
-  import type { VideoData } from '@/components/Controls/Video/VideoItem.vue'
-  import {computed, reactive, ref} from 'vue'
-  import { SocketClient } from '@/socket_client'
+import VideoItem from '@/components/Controls/Video/VideoItem.vue'
+import SubMenu from '@/components/Controls/SubMenu/SubMenu.vue'
+import type { VideoData } from '@/components/Controls/Video/VideoItem.vue'
+import type { SocketClient } from '@/socket_client'
+import { computed, reactive, ref } from 'vue'
 
-  interface Props {
+interface Props {
     client_future: Promise<SocketClient>,
-  }
+}
 
-  interface Emits {
+interface Emits {
     (e: 'selected', video: string): void,
-  }
+}
 
-  type VideoListMessage = {
+type VideoListMessage = {
     videos: VideoData[],
-  }
+}
 
-  const props = defineProps<Props>()
-  const emit = defineEmits<Emits>()
-  const sub_menu = ref<SubMenu>()
-  const video_list = reactive<VideoData[]>([])
+const props = defineProps<Props>()
+const emit = defineEmits<Emits>()
+const sub_menu = ref<typeof SubMenu>()
+const video_list = reactive<VideoData[]>([])
 
-  async function request_video_list() {
+async function request_video_list() {
     if (request_video_list.length > 0)
-      return
+        return
 
     const client = await props.client_future
     client.on<VideoListMessage>('video-list', message => {
-      video_list.splice(0, video_list.length)
-      video_list.push(...message.videos)
+        video_list.splice(0, video_list.length)
+        video_list.push(...message.videos)
     })
     client.send('video-list', null)
-  }
+}
 
-  function selected(video_file: string) {
+function selected(video_file: string) {
     emit('selected', video_file)
-  }
+}
 
-  const toggle = () => sub_menu.value?.toggle()
-  const enabled = computed(() => sub_menu.value?.enabled)
-  defineExpose({
+const toggle = () => sub_menu.value?.toggle()
+const enabled = computed(() => sub_menu.value?.enabled)
+defineExpose({
     toggle,
     enabled,
-  })
+})
 
-  request_video_list()
+request_video_list()
 </script>
 
 <template>
-  <SubMenu ref="sub_menu" height="50vh">
-    <div id="content-list">
-      <VideoItem
-          v-for="video in video_list"
-          :video="video"
-          :key="video.name"
-          @selected="selected" />
-    </div>
-  </SubMenu>
+    <SubMenu ref="sub_menu" height="50vh">
+        <div id="content-list">
+            <VideoItem
+                v-for="video in video_list"
+                :video="video"
+                :key="video.name"
+                @selected="selected" />
+        </div>
+    </SubMenu>
 </template>
 
 <style scoped>
-  #content-list {
+#content-list {
     width: 100%;
     height: 100%;
 
@@ -74,5 +74,5 @@
     grid-template-columns: repeat(auto-fill, minmax(15em, 1fr));
     grid-auto-rows: min-content;
     gap: 0.5em;
-  }
+}
 </style>

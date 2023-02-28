@@ -1,22 +1,22 @@
 <script setup lang="ts">
-  interface Props {
+interface Props {
     start: number,
     end: number,
-  }
+}
 
-  const props = defineProps<Props>()
+const props = defineProps<Props>()
 </script>
 
 <template>
-  <div class="segment"></div>
+    <div class="segment"></div>
 </template>
 
 <style scoped>
-  * {
+* {
     --buffered-color: #0005;
-  }
+}
 
-  .segment {
+.segment {
     position: absolute;
     left: calc(100% * v-bind('props.start'));
     width: calc(100% * v-bind('props.end - props.start'));
@@ -24,5 +24,5 @@
 
     border-radius: 1em;
     background-color: var(--buffered-color);
-  }
+}
 </style>

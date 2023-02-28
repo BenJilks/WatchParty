@@ -1,37 +1,40 @@
 <script setup lang="ts">
-  export type VideoData = {
+export type VideoData = {
     name: string,
     video_file: string,
     thumbnail_file: string,
-  }
+}
 
-  interface Props {
+interface Props {
     video: VideoData,
-  }
+}
 
-  interface Emits {
+interface Emits {
     (e: 'selected', video_file: string): void,
-  }
+}
 
-  const props = defineProps<Props>()
-  const emit = defineEmits<Emits>()
+const props = defineProps<Props>()
+const emit = defineEmits<Emits>()
 
-  function selected() {
+function selected() {
     emit('selected', props.video.video_file)
-  }
+}
 </script>
 
 <template>
-  <div class="item" @click="selected">
-    <div id="content">
-      <img :src="`/thumbnails/${ props.video.thumbnail_file }`" draggable="false" alt="" />
-      <text>{{ props.video.name }}</text>
+    <div class="item" @click="selected">
+        <div id="content">
+            <img
+                :src="`/thumbnails/${ props.video.thumbnail_file }`"
+                :alt="props.video.name"
+                draggable="false" />
+            <text>{{ props.video.name }}</text>
+        </div>
     </div>
-  </div>
 </template>
 
 <style scoped>
-  .item {
+.item {
     display: flex;
     align-content: center;
     justify-content: center;
@@ -39,15 +42,15 @@
     width: 100%;
     padding: 1em;
     height: 15em;
-  }
+}
 
-  .item:hover {
+.item:hover {
     border-radius: 0.7em;
     background-color: white;
     cursor: pointer;
-  }
+}
 
-  .item #content {
+.item #content {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -56,22 +59,22 @@
     width: 14em;
     height: 100%;
     overflow: hidden;
-  }
+}
 
-  .item img {
+.item img {
     width: 100%;
     aspect-ratio: 3/5;
 
     height: 10em;
     object-fit: cover;
     border-radius: 0.5em;
-  }
+}
 
-  .item text {
+.item text {
     display: inline-block;
     width: 100%;
 
     font-family: "Roboto", "Arial", sans-serif;
     font-weight: 500;
-  }
+}
 </style>

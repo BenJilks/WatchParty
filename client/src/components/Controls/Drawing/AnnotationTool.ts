@@ -27,8 +27,8 @@ export default abstract class AnnotationTool {
     public abstract get name(): string
     public abstract get icon(): string
 
-    public on_mouse_down(mouse: Position) {}
-    public on_mouse_up(mouse: Position) {}
-    public on_mouse_move(mouse: Position) {}
+    public on_mouse_down(_mouse: Position) {}
+    public on_mouse_up(_mouse: Position) {}
+    public on_mouse_move(_mouse: Position) {}
 
 }
