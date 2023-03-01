@@ -7,13 +7,14 @@ interface Emits {
 const emit = defineEmits<Emits>()
 
 const volume = ref(1)
+const muted = ref(false)
 const over_slider = ref(false)
-const volume_bar_ref = ref<HTMLDivElement | null>(null)
+const volume_bar_ref = ref<HTMLDivElement>()
 const is_dragging = ref(false)
 
 function toggle_mute() {
-    volume.value = volume.value > 0 ? 0 : 1
-    emit('volume_change', volume.value)
+    muted.value = !muted.value
+    emit('volume_change', muted.value ? 0 : 1)
 }
 
 function mouse_enter() {
@@ -25,9 +26,10 @@ function mouse_leave() {
 }
 
 window.addEventListener('mousemove', (event: MouseEvent) => {
-    if (volume_bar_ref.value == null || event.buttons != 1)
+    if (volume_bar_ref.value === undefined || event.buttons != 1)
         return
     is_dragging.value = true
+    muted.value = false
 
     const volume_bar = volume_bar_ref.value
     const rect = volume_bar?.getBoundingClientRect()
@@ -59,7 +61,7 @@ defineExpose({
         <img
             id="volume"
             draggable="false"
-            :src="`/icons/${ volume === 0 ? 'mute' : 'volume' }.svg`"
+            :src="`/icons/${ (muted || volume === 0) ? 'mute' : 'volume' }.svg`"
             @mouseenter="mouse_enter"
             @click="toggle_mute"
             alt="volume" />
@@ -82,6 +84,7 @@ defineExpose({
     object-fit: contain;
     cursor: pointer;
     pointer-events: all;
+    z-index: 101;
 }
 
 #slider {
@@ -104,6 +107,7 @@ defineExpose({
 
     cursor: pointer;
     pointer-events: all;
+    z-index: 100;
 }
 
 #volume {
@@ -128,7 +132,7 @@ defineExpose({
     aspect-ratio: 1/1;
 
     left: -50%;
-    bottom: v-bind('`${ 100*volume }%`');
+    bottom: v-bind('`${ muted ? 0 : 100*volume }%`');
     transform: translateY(50%);
 
     border-radius: 50%;
@@ -138,7 +142,7 @@ defineExpose({
 #done {
     position: absolute;
     width: 100%;
-    height: v-bind('`${ 100*volume }%`');
+    height: v-bind('`${ muted ? 0 : 100*volume }%`');
     bottom: 0;
 
     border-radius: 4em;
