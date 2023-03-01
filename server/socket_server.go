@@ -7,6 +7,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"net/http"
 	"nhooyr.io/websocket"
+	"path"
 )
 
 type MessageType string
@@ -91,13 +92,13 @@ func handleSocketConnection(
 }
 
 func handleConnection(response http.ResponseWriter, request *http.Request, clients chan<- Client) {
-	path := request.URL.Path
-	if path == "/socket" {
+	url := request.URL.Path
+	if request.Header.Get("Upgrade") == "websocket" && url == "/socket" {
 		handleSocketConnection(response, request, clients)
 		return
 	}
 
-	filePath := fmt.Sprintf("../client/dist/%s", path)
+	filePath := path.Join(StaticFilesPath, url)
 	http.ServeFile(response, request, filePath)
 }
 
