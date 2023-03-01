@@ -20,11 +20,7 @@ type RequestPlayMessage struct {
 	VideoFile *string `json:"video"`
 }
 
-type VideoListMessage struct {
-	Videos []VideoData `json:"videos"`
-}
-
-func handleClient(client Client, serverMessage chan<- ServerMessage, videos []VideoData) {
+func handleClient(client Client, serverMessage chan<- ServerMessage) {
 	serverMessage <- ServerMessage{
 		Type:   ServerMessageJoin,
 		Client: &client,
@@ -58,12 +54,10 @@ func handleClient(client Client, serverMessage chan<- ServerMessage, videos []Vi
 			}
 
 		case MessageVideoList:
-			log.WithField("count", len(videos)).
-				Info("Responded to video list request")
-
-			_ = client.Send(MessageVideoList, VideoListMessage{
-				Videos: videos,
-			})
+			serverMessage <- ServerMessage{
+				Type:  ServerMessageVideoList,
+				Token: client.Token,
+			}
 
 		case MessageRequestPlay:
 			var requestMessage RequestPlayMessage
@@ -98,8 +92,8 @@ func handleClient(client Client, serverMessage chan<- ServerMessage, videos []Vi
 	}
 }
 
-func ListenForNewClients(clients <-chan Client, serverMessage chan<- ServerMessage, videos []VideoData) {
+func ListenForNewClients(clients <-chan Client, serverMessage chan<- ServerMessage) {
 	for client := range clients {
-		go handleClient(client, serverMessage, videos)
+		go handleClient(client, serverMessage)
 	}
 }

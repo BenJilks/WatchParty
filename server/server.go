@@ -4,7 +4,9 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	log "github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 	"time"
+	"watch-party/database"
 )
 
 type ServerMessageType int
@@ -12,10 +14,11 @@ type ServerMessageType int
 const (
 	ServerMessageJoin = ServerMessageType(iota)
 	ServerMessageLeave
-	ServerMessageClap
-	ServerMessageChat
+	ServerMessageVideoList
 	ServerMessageRequestPlay
 	ServerMessageReady
+	ServerMessageClap
+	ServerMessageChat
 )
 
 type ServerMessage struct {
@@ -32,10 +35,18 @@ type ServerMessage struct {
 	VideoFile *string
 }
 
+type VideoPlaybackState struct {
+	Playing            bool
+	Progress           float64
+	LastProgressUpdate time.Time
+	VideoFile          string
+}
+
 type Server struct {
 	connectedClients map[string]*Client
 	stage            Stage
-	videoState       VideoState
+	videoState       VideoPlaybackState
+	db               *gorm.DB
 }
 
 func (server *Server) updateVideoState() {
@@ -70,6 +81,20 @@ func (server *Server) generateNewToken() string {
 	}
 }
 
+func (server *Server) broadcastExcept(
+	except string,
+	messageType MessageType,
+	data interface{},
+) {
+	for player, client := range server.connectedClients {
+		if player == except {
+			continue
+		}
+
+		_ = client.Send(messageType, data)
+	}
+}
+
 func (server *Server) join(client *Client) {
 	token := server.generateNewToken()
 
@@ -98,14 +123,86 @@ func (server *Server) leave(token string) {
 	server.updateSeats()
 }
 
-func (server *Server) broadcastExcept(
-	except string, messageType MessageType, data interface{},
-) {
-	for player, client := range server.connectedClients {
-		if player == except {
+type VideoDataMessage struct {
+	Name          string `json:"name"`
+	VideoFile     string `json:"video_file"`
+	ThumbnailFile string `json:"thumbnail_file"`
+}
+
+type VideoListMessage struct {
+	Videos []VideoDataMessage `json:"videos"`
+}
+
+func (server *Server) videoList(token string) {
+	client, exists := server.connectedClients[token]
+	if !exists {
+		return
+	}
+
+	var videos []database.Video
+	if result := server.db.Find(&videos); result.Error != nil {
+		log.WithError(result.Error).Error("Unable to query videos")
+		return
+	}
+
+	var videoDataList = make([]VideoDataMessage, len(videos))
+	for i, video := range videos {
+		videoDataList[i] = VideoDataMessage{
+			Name:          video.Title,
+			VideoFile:     video.VideoFilePath,
+			ThumbnailFile: video.ThumbnailPath,
+		}
+	}
+
+	_ = client.Send(MessageVideoList, VideoListMessage{
+		Videos: videoDataList,
+	})
+}
+
+func (server *Server) requestPlay(message ServerMessage) {
+	server.logRequest(message)
+
+	videoFile := server.videoState.VideoFile
+	if message.VideoFile != nil {
+		videoFile = *message.VideoFile
+	}
+
+	server.videoState = VideoPlaybackState{
+		Playing:            message.Playing,
+		Progress:           message.Progress,
+		VideoFile:          videoFile,
+		LastProgressUpdate: time.Now(),
+	}
+
+	for _, client := range server.connectedClients {
+		client.Ready = false
+	}
+
+	server.broadcastExcept(*message.Token, MessageRequestPlay, RequestPlayMessage{
+		Playing:   message.Playing,
+		Progress:  message.Progress,
+		VideoFile: message.VideoFile,
+	})
+}
+
+func (server *Server) ready(token string) {
+	allClientsReady := true
+	for clientToken, client := range server.connectedClients {
+		if token == clientToken {
+			log.WithField("token", clientToken).Info("Reported as ready")
+			client.Ready = true
 			continue
 		}
-		_ = client.Send(messageType, data)
+
+		if !client.Ready {
+			allClientsReady = false
+			log.WithField("token", clientToken).Info("Is still buffering")
+		}
+	}
+
+	if allClientsReady {
+		log.Info("All clients are ready, playing request")
+		server.broadcastExcept("", MessageReady, nil)
 	}
 }
 
@@ -168,84 +265,40 @@ func (server *Server) logRequest(message ServerMessage) {
 	}).Info("Got play request")
 }
 
-func (server *Server) requestPlay(message ServerMessage) {
-	server.logRequest(message)
-
-	videoFile := server.videoState.VideoFile
-	if message.VideoFile != nil {
-		videoFile = *message.VideoFile
-	}
-
-	server.videoState = VideoState{
-		Playing:            message.Playing,
-		Progress:           message.Progress,
-		VideoFile:          videoFile,
-		LastProgressUpdate: time.Now(),
-	}
-
-	for _, client := range server.connectedClients {
-		client.Ready = false
-	}
-
-	server.broadcastExcept(*message.Token, MessageRequestPlay, RequestPlayMessage{
-		Playing:   message.Playing,
-		Progress:  message.Progress,
-		VideoFile: message.VideoFile,
-	})
-}
-
-func (server *Server) ready(token string) {
-	allClientsReady := true
-	for clientToken, client := range server.connectedClients {
-		if token == clientToken {
-			log.WithField("token", clientToken).Info("Reported as ready")
-			client.Ready = true
-			continue
-		}
-
-		if !client.Ready {
-			allClientsReady = false
-			log.WithField("token", clientToken).Info("Is still buffering")
-		}
-	}
-
-	if allClientsReady {
-		log.Info("All clients are ready, playing request")
-		server.broadcastExcept("", MessageReady, nil)
-	}
-}
-
 func (server *Server) handleMessage(message ServerMessage) {
 	switch message.Type {
 	case ServerMessageJoin:
 		server.join(message.Client)
 	case ServerMessageLeave:
 		server.leave(*message.Token)
-	case ServerMessageClap:
-		server.clap(*message.Token, message.State)
-	case ServerMessageChat:
-		server.chat(*message.Token, message.Message)
+	case ServerMessageVideoList:
+		server.videoList(*message.Token)
 	case ServerMessageRequestPlay:
 		server.requestPlay(message)
 	case ServerMessageReady:
 		server.ready(*message.Token)
+	case ServerMessageClap:
+		server.clap(*message.Token, message.State)
+	case ServerMessageChat:
+		server.chat(*message.Token, message.Message)
 	default:
 		panic(message)
 	}
 }
 
-func StartServer(messages <-chan ServerMessage) {
+func StartServer(db *gorm.DB, messages <-chan ServerMessage) {
 	server := Server{
 		connectedClients: map[string]*Client{},
 		stage: Stage{
 			seatsUsed: map[string]Seat{},
 		},
-		videoState: VideoState{
+		videoState: VideoPlaybackState{
 			Playing:            false,
 			Progress:           0,
 			LastProgressUpdate: time.Now(),
 			VideoFile:          "",
 		},
+		db: db,
 	}
 
 	for message := range messages {

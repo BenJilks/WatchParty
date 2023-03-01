@@ -1,10 +1,20 @@
-package main
+package database
 
-import "database/sql"
+import (
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
+)
 
-type Video struct {
-}
+func Open(filePath string) (*gorm.DB, error) {
+	sqliteDB := sqlite.Open(filePath)
+	db, err := gorm.Open(sqliteDB, &gorm.Config{})
+	if err != nil {
+		return nil, err
+	}
 
-func OpenDatabase() (*sql.DB, error) {
-	return sql.Open("sqlite3", "file:db.sqlite")
+	if err := db.AutoMigrate(Video{}); err != nil {
+		return nil, err
+	}
+
+	return db, nil
 }

@@ -1,8 +1,8 @@
 package main
 
 const DefaultVidsPath = "../client/dist/vids"
-const ThumbnailFrameNumber = 20
-const ThumbnailScale = 400
+const DefaultThumbnailsPath = "../client/dist/thumbnails"
+const DefaultDatabasePath = "../client/dist/watch-party.db"
 
 const (
 	MessageUpdateState = MessageType("update-state")
