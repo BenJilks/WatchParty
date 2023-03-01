@@ -87,7 +87,7 @@ func handleClient(client Client, serverMessage chan<- ServerMessage) {
 			return
 
 		default:
-			panic(message)
+			log.Warnf("Uknown message type '%s'", message.Type)
 		}
 	}
 }

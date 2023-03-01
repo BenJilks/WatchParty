@@ -21,6 +21,19 @@ html, body {
     background-color: black;
 }
 
+input {
+    border: none;
+    border-radius: 0.7em;
+    padding: 0.4em 0.5em;
+    width: 15em;
+
+    color: black;
+    background-color: #dddf;
+    outline: none;
+
+    box-shadow: inset 0 0 0.4em #0009;
+}
+
 .icon {
     height: 100%;
     aspect-ratio: 1/1;

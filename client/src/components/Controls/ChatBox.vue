@@ -51,17 +51,6 @@ function on_input_key(event: KeyboardEvent) {
 </template>
 
 <style scoped>
-input {
-    border: none;
-    border-radius: 0.7em;
-    padding: 0.4em 0.5em;
-    width: 15em;
-
-    color: black;
-    background-color: #dddf;
-    outline: none;
-}
-
 #send {
     height: 100%;
     aspect-ratio: 1/1;
