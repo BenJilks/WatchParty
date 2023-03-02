@@ -41,16 +41,15 @@ const progress_factor = computed(() =>
 function update_buffered_segments(video: HTMLVideoElement) {
     buffered_segments.splice(0, buffered_segments.length)
 
-    let start = 0, end = 0
     for (let i = 0; i < video.buffered.length; i++) {
-        start = Math.min(start, video.buffered.start(i))
-        end = Math.max(end, video.buffered.end(i))
-    }
+        const start = video.buffered.start(i)
+        const end = video.buffered.end(i)
 
-    buffered_segments.push({
-        start: start,
-        end: end,
-    })
+        const length = end - start
+        if (length / data.duration > 0.1) {
+            buffered_segments.push({start: start, end: end})
+        }
+    }
 }
 
 function set_syncing(value: boolean) {
@@ -132,6 +131,7 @@ async function send_request_play(message: RequestPlayMessage) {
     await handle_request_play(message)
 }
 
+let buffer_updater = ref<number>()
 watch(props.video, async () => {
     const video = props.video.value!!
     video.preload = 'auto'
@@ -144,18 +144,25 @@ watch(props.video, async () => {
         update_buffered_segments(video)
     })
 
+    // NOTE: Ensure there's only ever a single interval
+    clearInterval(buffer_updater.value)
+    buffer_updater.value = setInterval(() =>
+        update_buffered_segments(video), 200)
+
     video.addEventListener('timeupdate', () => {
         if (!is_seeking)
             data.progress = video.currentTime
     })
 
     video.addEventListener('waiting', () => {
-        if (!data.syncing) {
-            send_request_play({
-                playing: data.playing,
-                progress: data.progress,
-            })
+        if (data.syncing) {
+            return
         }
+
+        send_request_play({
+            playing: data.playing,
+            progress: data.progress,
+        })
     })
 
     const client = await props.client_future

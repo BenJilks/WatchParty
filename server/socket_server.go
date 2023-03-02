@@ -93,9 +93,15 @@ func handleSocketConnection(
 
 func handleConnection(response http.ResponseWriter, request *http.Request, clients chan<- Client) {
 	url := request.URL.Path
+	log.WithField("url", url).Trace("Got HTTP request")
+
 	if request.Header.Get("Upgrade") == "websocket" && url == "/socket" {
 		handleSocketConnection(response, request, clients)
 		return
+	}
+
+	if url == "/" {
+		url = "/index.html"
 	}
 
 	filePath := path.Join(StaticFilesPath, url)
