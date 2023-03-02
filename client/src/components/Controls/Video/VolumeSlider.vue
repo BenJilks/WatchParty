@@ -9,7 +9,7 @@ const emit = defineEmits<Emits>()
 const volume = ref(1)
 const muted = ref(false)
 const over_slider = ref(false)
-const volume_bar_ref = ref<HTMLDivElement>()
+const volume_bar_ref = ref<HTMLDivElement | null>(null)
 const is_dragging = ref(false)
 
 function toggle_mute() {
@@ -26,15 +26,15 @@ function mouse_leave() {
 }
 
 window.addEventListener('mousemove', (event: MouseEvent) => {
-    if (volume_bar_ref.value === undefined || event.buttons != 1)
+    if (volume_bar_ref.value == null || event.buttons != 1) {
         return
+    }
     is_dragging.value = true
     muted.value = false
 
     const volume_bar = volume_bar_ref.value
-    const rect = volume_bar?.getBoundingClientRect()
+    const rect = volume_bar.getBoundingClientRect()
     const y = (event.clientY - rect.y) / rect.height
-
     volume.value = Math.min(Math.max(1 - y, 0), 1)
     emit('volume_change', volume.value)
 })
@@ -50,7 +50,7 @@ defineExpose({
 </script>
 
 <template>
-    <div class="icon" @mouseenter="mouse_enter">
+    <div class="icon" @mouseenter="mouse_enter" @mouseleave="mouse_leave">
         <div id="slider" @mouseleave="mouse_leave">
             <div v-if="show_slider" id="bar" ref="volume_bar_ref">
                 <div id="marker"></div>
@@ -74,6 +74,8 @@ defineExpose({
     cursor: default;
     padding: 0 0.6em;
     width: 4em;
+
+    pointer-events: all;
 }
 
 .icon img {
@@ -106,7 +108,6 @@ defineExpose({
     background-color: #fffe;
 
     cursor: pointer;
-    pointer-events: all;
     z-index: 100;
 }
 
