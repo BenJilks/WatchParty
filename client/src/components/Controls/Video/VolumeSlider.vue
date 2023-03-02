@@ -25,6 +25,20 @@ function mouse_leave() {
     over_slider.value = false
 }
 
+function set_volume(value: number) {
+    volume.value = Math.min(Math.max(value, 0), 1)
+    emit('volume_change', volume.value)
+}
+
+function mouse_wheel(event: WheelEvent) {
+    if (muted.value && event.deltaY >= 0) {
+        return
+    }
+
+    muted.value = false
+    set_volume(volume.value - event.deltaY * 0.0005)
+}
+
 window.addEventListener('mousemove', (event: MouseEvent) => {
     if (volume_bar_ref.value == null || event.buttons != 1) {
         return
@@ -35,8 +49,7 @@ window.addEventListener('mousemove', (event: MouseEvent) => {
     const volume_bar = volume_bar_ref.value
     const rect = volume_bar.getBoundingClientRect()
     const y = (event.clientY - rect.y) / rect.height
-    volume.value = Math.min(Math.max(1 - y, 0), 1)
-    emit('volume_change', volume.value)
+    set_volume(1 - y)
 })
 
 window.addEventListener('mouseup', () => {
@@ -50,7 +63,12 @@ defineExpose({
 </script>
 
 <template>
-    <div class="icon" @mouseenter="mouse_enter" @mouseleave="mouse_leave">
+    <div
+        class="icon"
+        @mouseenter="mouse_enter"
+        @mouseleave="mouse_leave"
+        @wheel="mouse_wheel">
+
         <div id="slider" @mouseleave="mouse_leave">
             <div v-if="show_slider" id="bar" ref="volume_bar_ref">
                 <div id="marker"></div>
