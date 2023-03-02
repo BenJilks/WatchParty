@@ -21,6 +21,8 @@ defineExpose({
     <div class="screen" ref="screen">
         <VideoPlayer ref="video_player" />
         <Drawing ref="drawing" />
+
+        <div id="shadow-overlay"></div>
         <div v-if="show_overlay_message" class="overlay">
             {{ overlay_message }}
         </div>
@@ -42,10 +44,25 @@ defineExpose({
     transform: translateX(-50%);
 
     background-color: #0a0a0aff;
-    box-shadow: 0 0 5vh 2vh #6666;
-    border-radius: 0.5vh;
+    border-radius: 1vh;
 
     overflow: hidden;
+    box-shadow: 0 0 5vh 2vh #6666;
+}
+
+.screen #shadow-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+
+    box-shadow: inset 0 0 0.5em 0.25em #000;
+    border-radius: 1vh;
+    border: 0.2em solid #000;
+
+    pointer-events: none;
+    z-index: 102;
 }
 
 .screen * {
