@@ -10,10 +10,9 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"strings"
 )
 
-const ThumbnailFrameNumber = 20
+const ThumbnailFrameNumber = 24 * 10
 const ThumbnailScale = 400
 
 type VideoSourceType = string
@@ -42,7 +41,7 @@ func readVideoFrame(path string, outputPath string) error {
 
 func videoName(videoName string) string {
 	extension := path.Ext(videoName)
-	name, _ := strings.CutSuffix(videoName, extension)
+	name := videoName[:len(videoName)-len(extension)]
 	return name
 }
 
