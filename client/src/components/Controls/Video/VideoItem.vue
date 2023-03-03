@@ -41,7 +41,7 @@ function selected() {
 
     width: 100%;
     padding: 1em;
-    height: 15em;
+    height: var(--thumbnail-size);
 }
 
 .item:hover {
@@ -56,16 +56,16 @@ function selected() {
     align-items: center;
     gap: 0.5em;
 
-    width: 14em;
+    width: var(--thumbnail-size);
     height: 100%;
     overflow: hidden;
 }
 
 .item img {
     width: 100%;
-    aspect-ratio: 3/5;
+    height: auto;
+    aspect-ratio: 5/3;
 
-    height: 10em;
     object-fit: cover;
     border-radius: 0.5em;
 }

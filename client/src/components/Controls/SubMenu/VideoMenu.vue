@@ -141,6 +141,10 @@ for (let i = 0; i < 100; i++) {
 </template>
 
 <style scoped>
+* {
+    --thumbnail-size: 13em;
+}
+
 #content {
     display: flex;
     flex-direction: column;
@@ -190,7 +194,7 @@ for (let i = 0; i < 100; i++) {
 
     display: grid;
     grid-auto-flow: row;
-    grid-template-columns: repeat(auto-fill, minmax(15em, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(var(--thumbnail-size), 1fr));
     grid-auto-rows: min-content;
     gap: 0.5em;
 
