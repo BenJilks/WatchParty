@@ -83,6 +83,7 @@ async function set_needs_focus(error: DOMException) {
     })
 
     window.addEventListener('click', give_focus)
+    props.screen.value?.set_hide_overlay_message(false)
     props.screen.value?.set_overlay_message('Click Here to Play')
 }
 
