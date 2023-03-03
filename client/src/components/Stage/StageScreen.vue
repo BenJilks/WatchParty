@@ -90,5 +90,6 @@ defineExpose({
 
     transition: opacity 0.3s;
     opacity: v-bind('show_overlay_message ? 1 : 0');
+    z-index: 1;
 }
 </style>

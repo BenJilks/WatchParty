@@ -56,8 +56,10 @@ function set_syncing(value: boolean) {
     data.syncing = value
     if (value) {
         props.screen.value?.set_overlay_message('Syncing Playback...')
+        props.screen.value?.set_hide_overlay_message(false)
     } else {
         props.screen.value?.set_overlay_message(undefined)
+        props.screen.value?.set_hide_overlay_message(true)
     }
 }
 
@@ -66,14 +68,11 @@ async function set_needs_focus(error: DOMException) {
         return
 
     const give_focus = async () => {
-        const video = props.video.value
-
         window.removeEventListener('click', give_focus)
-        await video?.play()
+        await props.video.value?.play()
         data.playing = true
-
         client.send('ready', null)
-        props.screen.value?.set_overlay_message(undefined)
+        props.screen.value?.set_hide_overlay_message(true)
     }
 
     const client = await props.client_future
@@ -168,10 +167,10 @@ watch(props.video, async () => {
 
     const client = await props.client_future
     client.on<RequestPlayMessage>('request-play', handle_request_play)
-    client.on('ready', () => {
+    client.on('ready', async () => {
         data.playing
-                ? video.play().catch(set_needs_focus)
-                : video.pause()
+            ? video.play().catch(set_needs_focus)
+            : video.pause()
         set_syncing(false)
     })
 })
