@@ -8,8 +8,8 @@ body {
     --curtain-offset: -3vh;
     --front-board-height: 6vh;
 
-    --panel-color: #fffb;
-    --selected-color: #fffe;
+    --panel-color: #fffd;
+    --selected-color: #fff;
 }
 
 img {

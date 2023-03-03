@@ -110,7 +110,7 @@ for (let i = 0; i < 100; i++) {
 <template>
     <SubMenu
         ref="sub_menu"
-        height="50vh"
+        height="70vh"
         :ratio_buttons="computed(() => ratio_buttons.value)"
         icon="up.svg">
 
