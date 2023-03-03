@@ -8,10 +8,13 @@ const video_player = ref<typeof VideoPlayer>()
 const drawing = ref<typeof Drawing>()
 
 const overlay_message = ref<string | undefined>()
-const show_overlay_message = computed(() => overlay_message.value !== undefined)
+const hide_overlay_message = ref(false)
+const show_overlay_message = computed(() =>
+    !hide_overlay_message.value && overlay_message.value !== undefined)
 
 defineExpose({
     set_overlay_message: (value: string | undefined) => overlay_message.value = value,
+    set_hide_overlay_message: (value: boolean) => hide_overlay_message.value = value,
     video: computed(() => video_player.value?.video),
     tools: computed(() => drawing.value?.tools),
 })
@@ -23,7 +26,7 @@ defineExpose({
         <Drawing ref="drawing" />
 
         <div id="shadow-overlay"></div>
-        <div v-if="show_overlay_message" class="overlay">
+        <div class="overlay">
             {{ overlay_message }}
         </div>
     </div>
@@ -62,7 +65,6 @@ defineExpose({
     border: 0.2em solid #000;
 
     pointer-events: none;
-    z-index: 102;
 }
 
 .screen * {
@@ -80,11 +82,13 @@ defineExpose({
     font-size: 3em;
     font-weight: bold;
 
-    color: white;
-    background-color: #000a;
-    z-index: 3;
+    color: #dddf;
+    background-color: #222a;
 
     pointer-events: none;
     user-select: none;
+
+    transition: opacity 0.3s;
+    opacity: v-bind('show_overlay_message ? 1 : 0');
 }
 </style>

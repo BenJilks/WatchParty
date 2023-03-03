@@ -19,7 +19,7 @@ const controls = ref<HTMLDivElement>()
 const controls_indicator = ref<HTMLDivElement>()
 
 const video_controls = ref<typeof VideoControls>()
-defineProps<Props>()
+const props = defineProps<Props>()
 
 function change_video(video_file: string) {
     console.log(`Selected video: '${ video_file }'`)
@@ -31,6 +31,7 @@ async function video_selected(video_file: string) {
     ratio_buttons.value.close_current()
 }
 
+const saved_overlay = ref<string>()
 function set_controls_visible(visible: boolean) {
     if (controls.value === undefined || controls_indicator.value === undefined) {
         return
@@ -55,6 +56,11 @@ onMounted(async () => {
         const height = (controls.value?.getBoundingClientRect()?.height ?? 0) * 6
         const show_controls = (event.screenY >= window.innerHeight - height)
         set_controls_visible(show_controls)
+    })
+
+    window.addEventListener('click', () => {
+        props.screen.value?.set_hide_overlay_message(
+            ratio_buttons.value.is_any_selected())
     })
 })
 </script>

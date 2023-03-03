@@ -196,4 +196,8 @@ for (let i = 0; i < 100; i++) {
 
     box-shadow: inset 0 0 1em #0006;
 }
+
+#video-list::-webkit-scrollbar {
+    display: none;
+}
 </style>

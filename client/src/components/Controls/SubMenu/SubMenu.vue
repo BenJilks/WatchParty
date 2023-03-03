@@ -58,7 +58,7 @@ defineExpose({
 
 <style scoped>
 #menu {
-    position: fixed;
+    position: absolute;
     left: 0;
     width: 100%;
     height: v-bind('height');
