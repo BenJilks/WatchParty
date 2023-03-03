@@ -14,7 +14,7 @@ const is_dragging = ref(false)
 
 function toggle_mute() {
     muted.value = !muted.value
-    emit('volume_change', muted.value ? 0 : 1)
+    emit('volume_change', muted.value ? 0 : volume.value)
 }
 
 function mouse_enter() {
