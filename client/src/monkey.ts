@@ -29,7 +29,7 @@ const monkey_seat_data_table = [
     { bottom: 8.5, height: 9.5, seat_offsets:
             [-46, -37.5, -28.8, -20.3, -11.5, -2.8, 5.5, 14.5, 23, 31.8, 40.5, 49] },
     { bottom: 5, height: 12, seat_offsets:
-            [-46.5, -36, -25, -15, -4, 6, 17, 27.5, 38, 48] },
+            [-46.5, -36, -25, -15, -4, 6, 17, 27.5, 38, 49] },
     { bottom: 0, height: 15, seat_offsets:
             [-48, -34.5, -21, -7, 7, 20.2, 34.5, 48] },
     { bottom: -8, height: 19, seat_offsets:
