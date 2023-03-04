@@ -148,16 +148,19 @@ func videoExists(db *gorm.DB, filePath string) (bool, error) {
 	return count > 0, nil
 }
 
-func ScanForNewFileVideos(db *gorm.DB, videosPath string, thumbnailsPath string) error {
+func ScanForNewFileVideos(db *gorm.DB, videosPath string, thumbnailsPath string) {
 	log.Infof("Scanning '%s' for new file videos", videosPath)
 	if err := createDirIfNotExist(thumbnailsPath); err != nil {
-		return err
+		log.WithError(err).
+			WithField("path", thumbnailsPath).
+			Error("Need path to store thumbnails")
+		return
 	}
 
 	thumbnailRequests := make(chan ThumbnailRequest)
 	go startThumbnailWorkerPools(ThumbnailWorkerPoolCount, thumbnailRequests)
 
-	return filepath.WalkDir(videosPath, func(filePath string, info fs.DirEntry, err error) error {
+	err := filepath.WalkDir(videosPath, func(filePath string, info fs.DirEntry, err error) error {
 		if err != nil || info.IsDir() {
 			return nil
 		}
@@ -176,4 +179,9 @@ func ScanForNewFileVideos(db *gorm.DB, videosPath string, thumbnailsPath string)
 
 		return nil
 	})
+
+	if err != nil {
+		log.WithError(err).
+			Error("Error scanning video files")
+	}
 }

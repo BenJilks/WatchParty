@@ -18,10 +18,7 @@ func setupDatabase(
 		return nil, err
 	}
 
-	if err := database.ScanForNewFileVideos(db, videosPath, thumbnailsPath); err != nil {
-		return nil, err
-	}
-
+	go database.ScanForNewFileVideos(db, videosPath, thumbnailsPath)
 	return db, nil
 }
 
