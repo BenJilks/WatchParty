@@ -4,8 +4,8 @@ import AnnotationMenu from '@/components/Controls/SubMenu/AnnotationMenu.vue'
 import VideoControls from '@/components/Controls/Video/VideoControls.vue'
 import ChatBox from '@/components/Controls/ChatBox.vue'
 import type StageScreen from '@/components/Stage/StageScreen.vue'
-import type { Ref } from 'vue'
 import type { SocketClient } from '@/socket_client'
+import type { Ref } from 'vue'
 import { computed, onMounted, ref } from 'vue'
 import { RatioButtons } from '@/components/Controls/SubMenu/RatioButtons'
 
@@ -31,7 +31,6 @@ async function video_selected(video_file: string) {
     ratio_buttons.value.close_current()
 }
 
-const saved_overlay = ref<string>()
 function set_controls_visible(visible: boolean) {
     if (controls.value === undefined || controls_indicator.value === undefined) {
         return

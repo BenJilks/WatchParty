@@ -3,7 +3,9 @@ import BufferedSegment from '@/components/Controls/Video/BufferedSegment.vue'
 import VolumeSlider from '@/components/Controls/Video/VolumeSlider.vue'
 import type StageScreen from '@/components/Stage/StageScreen.vue'
 import type { SocketClient } from '@/socket_client'
+import type { BufferedSegmentData, PlaybackData } from '@/components/Controls/Video/VideoSync'
 import type { Ref } from 'vue'
+import SyncedVideo from '@/components/Controls/Video/VideoSync'
 import { computed, reactive, ref, watch } from 'vue'
 
 interface Props {
@@ -12,199 +14,57 @@ interface Props {
     client_future: Promise<SocketClient>,
 }
 
-interface BufferedSegmentData {
-    start: number,
-    end: number,
-}
-
-type RequestPlayMessage = {
-    playing: boolean,
-    progress: number,
-    video?: string,
-}
-
 let is_seeking = false
 const buffered_segments = reactive<BufferedSegmentData[]>([])
 const seek_bar_ref = ref<HTMLDivElement>()
-const data = reactive({
+const playback_data = ref<PlaybackData>({
     progress: 0,
     duration: 1,
     playing: false,
-    muted: false,
-    syncing: false,
+    syncing: true,
 })
 
 const props = defineProps<Props>()
 const progress_factor = computed(() =>
-        data.progress / data.duration)
+        playback_data.value.progress / playback_data.value.duration)
 
-function update_buffered_segments(video: HTMLVideoElement) {
-    buffered_segments.splice(0, buffered_segments.length)
-
-    for (let i = 0; i < video.buffered.length; i++) {
-        const start = video.buffered.start(i)
-        const end = video.buffered.end(i)
-
-        const length = end - start
-        if (length / data.duration > 0.1) {
-            buffered_segments.push({start: start, end: end})
-        }
-    }
+function update_buffer_segments() {
+    buffered_segments.splice(0)
+    buffered_segments.push(...synced_video?.get_updated_buffered_segments() ?? [])
 }
 
-function set_syncing(value: boolean) {
-    data.syncing = value
-    if (value) {
-        props.screen.value?.set_overlay_message('Syncing Playback...')
-        props.screen.value?.set_hide_overlay_message(false)
-    } else {
-        props.screen.value?.set_overlay_message(undefined)
-        props.screen.value?.set_hide_overlay_message(true)
-    }
-}
-
-async function set_needs_focus(error: DOMException) {
-    if (error.name != 'NotAllowedError')
-        return
-
-    const give_focus = async () => {
-        window.removeEventListener('click', give_focus)
-        await props.video.value?.play()
-        data.playing = true
-        client.send('ready', null)
-        props.screen.value?.set_hide_overlay_message(true)
-    }
-
-    const client = await props.client_future
-    client.send('request-play', {
-        playing: data.playing,
-        progress: data.progress,
-    })
-
-    window.addEventListener('click', give_focus)
-    props.screen.value?.set_hide_overlay_message(false)
-    props.screen.value?.set_overlay_message('Click Here to Play')
-}
-
-async function send_when_ready() {
-    const video = props.video.value
-    if (video?.src === undefined || video.src == '') {
-        props.screen.value?.set_overlay_message('No Video Selected')
-        return
-    }
-
-    async function ready_to_play() {
-        const client = await props.client_future
-        client.send('ready', null)
-        video?.removeEventListener('canplaythrough', ready_to_play)
-    }
-
-    video?.addEventListener('canplaythrough', ready_to_play)
-    if ((video?.readyState ?? 0) >= HTMLMediaElement.HAVE_FUTURE_DATA) {
-        await ready_to_play()
-    }
-}
-
-async function handle_request_play(message: RequestPlayMessage) {
-    const video = props.video.value
-    if (video === undefined) {
-        return
-    }
-
-    if (!video.paused) {
-        video.pause()
-    }
-    set_syncing(true)
-
-    if (message.video ?? '' != '') {
-        video.src = `/vids/${ message.video }`
-    }
-    video.currentTime = message.progress
-    data.playing = message.playing
-    data.progress = message.progress
-    await send_when_ready()
-}
-
-async function send_request_play(message: RequestPlayMessage) {
-    const client = await props.client_future
-    client.send('request-play', message)
-    await handle_request_play(message)
-}
-
+let synced_video: SyncedVideo | null = null
 let buffer_updater = ref<number>()
+
 watch(props.video, async () => {
+    const client = await props.client_future
     const video = props.video.value!!
-    video.preload = 'auto'
-
-    video.addEventListener('durationchange', () => {
-        data.duration = video.duration
-    })
-
-    video.addEventListener('progress', () => {
-        update_buffered_segments(video)
-    })
+    const screen = props.screen.value!!
+    synced_video = new SyncedVideo(client, video, screen, playback_data)
 
     // NOTE: Ensure there's only ever a single interval
     clearInterval(buffer_updater.value)
-    buffer_updater.value = setInterval(() =>
-        update_buffered_segments(video), 200)
-
-    video.addEventListener('timeupdate', () => {
-        if (!is_seeking)
-            data.progress = video.currentTime
-    })
-
-    video.addEventListener('waiting', () => {
-        if (data.syncing) {
-            return
-        }
-
-        send_request_play({
-            playing: data.playing,
-            progress: data.progress,
-        })
-    })
-
-    const client = await props.client_future
-    client.on<RequestPlayMessage>('request-play', handle_request_play)
-    client.on('ready', async () => {
-        data.playing
-            ? video.play().catch(set_needs_focus)
-            : video.pause()
-        set_syncing(false)
-    })
+    buffer_updater.value = setInterval(update_buffer_segments, 200)
+    video.addEventListener('progress', update_buffer_segments)
 })
 
 async function play_pause() {
-    if (data.syncing)
+    if (playback_data.value.syncing)
         return
-
-    await send_request_play({
-        playing: !data.playing,
-        progress: data.progress,
-    })
-}
-
-function client_seek(progress: number) {
-    const video = props.video.value
-    if (video === undefined)
-        return
-
-    if ('fastSeek' in video) {
-        video.fastSeek(progress)
-    } else {
-        // NOTE: Chrome does not have a `fastSeek` function
-        (video as any).currentTime = progress
-    }
+    await synced_video?.send_toggle_play_pause()
 }
 
 function on_seek_start() {
-    if (is_seeking || data.syncing) {
+    if (is_seeking || playback_data.value.syncing) {
         return
     }
 
     props.video.value?.pause()
     is_seeking = true
+}
+
+function volume_change(volume: number) {
+    synced_video?.change_volume(volume)
 }
 
 window.addEventListener('mouseup', async () => {
@@ -213,10 +73,7 @@ window.addEventListener('mouseup', async () => {
     }
 
     is_seeking = false
-    await send_request_play({
-        playing: data.playing,
-        progress: data.progress,
-    })
+    await synced_video?.force_sync()
 })
 
 window.addEventListener('mousemove', event => {
@@ -228,29 +85,11 @@ window.addEventListener('mousemove', event => {
     const x_along_seek_bar = event.x - (bounding_rect?.x ?? 0) - (1.5 / 2)*16
 
     const progress = x_along_seek_bar / (bounding_rect?.width ?? 1)
-    if (progress < 0) {
-        data.progress = 0
-    } else if (progress > 1) {
-        data.progress = data.duration
-    } else {
-        data.progress = data.duration * progress
-    }
-
-    client_seek(data.progress)
+    synced_video?.seek(progress)
 })
 
-function volume_change(volume: number) {
-    const video = props.video.value
-    if (video === undefined) {
-        return
-    }
-
-    video.volume = volume
-    video.muted = (volume == 0)
-}
-
 async function change_video(video_path: string) {
-    await send_request_play({
+    await synced_video?.send_request_play({
         playing: true,
         progress: 0,
         video: video_path,
@@ -272,7 +111,7 @@ defineExpose({
     <img
         class="icon"
         draggable="false"
-        :src="`/icons/${ data.playing ? 'pause' : 'play' }.svg`"
+        :src="`/icons/${ playback_data.playing ? 'pause' : 'play' }.svg`"
         @click="play_pause"
         alt="play" />
 
@@ -280,8 +119,8 @@ defineExpose({
         <BufferedSegment
             v-for="(segment, i) in buffered_segments"
             :key="i"
-            :start="segment.start / data.duration"
-            :end="segment.end / data.duration" />
+            :start="segment.start"
+            :end="segment.end" />
         <div id="done-timeline"></div>
         <div id="scrubber" @mousedown="on_seek_start"></div>
     </div>

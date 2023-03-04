@@ -11,7 +11,6 @@ interface Props {
 
 const show = ref(false)
 const disabled = ref(true)
-const enabled = ref(false)
 
 const button = ref<HTMLImageElement>()
 const props = defineProps<Props>()
