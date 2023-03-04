@@ -5,7 +5,7 @@ import type { VideoData } from '@/components/Controls/Video/VideoItem.vue'
 import type { SocketClient } from '@/socket_client'
 import type { RatioButtons } from '@/components/Controls/SubMenu/RatioButtons'
 import type { Ref } from 'vue'
-import {computed, reactive, ref} from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 
 interface Props {
     client_future: Promise<SocketClient>,
@@ -96,15 +96,9 @@ async function submit_youtube() {
     can_submit_youtube.value = false
 }
 
-request_video_list()
-
-for (let i = 0; i < 100; i++) {
-    video_list.push({
-        name: 'Testing',
-        video_file: 'Stolen Chat (El no Sabe).webm',
-        thumbnail_file: 'Stolen Chat (El no Sabe).jpg'
-    })
-}
+onMounted(() => {
+    request_video_list()
+})
 </script>
 
 <template>
