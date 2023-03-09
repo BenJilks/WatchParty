@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { ClapMessage, ClapResponseMessage, ClapState, MonkeyData } from '@/monkey'
+import type { MonkeyActionMessage, MonkeyActionResponseMessage, MonkeyAction, MonkeyData } from '@/monkey'
 import type { SocketClient } from "@/socket_client"
 import { reactive, ref } from 'vue'
 
@@ -64,10 +64,10 @@ const chat_message = reactive<ChatBubble>({
     animation_speed: 0.2,
 })
 
-async function update_clap_state(state: ClapState) {
+async function send_action(action: MonkeyAction) {
     const client = await props.client_future
-    client.send<ClapMessage>('clap', {
-        state: state,
+    client.send<MonkeyActionMessage>('monkey-action', {
+        action: action,
         token: props.monkey.your_token ?? '',
     })
 }
@@ -77,14 +77,14 @@ let idle_timeout: number | undefined = undefined
 function clap_down() {
     monkey_state.sprite = Sprite.Ready
     monkey_state.offset = CLAP_READY_OFFSET
-    update_clap_state('ready')
+    send_action('ready')
     clearTimeout(idle_timeout)
 }
 
 function clap_up() {
     monkey_state.sprite = Sprite.Clap
     monkey_state.offset = CLAP_OFFSET
-    update_clap_state('clap')
+    send_action('clap')
 
     const monkey_image = monkey_image_ref.value!
     monkey_image.onload = () => {
@@ -155,11 +155,11 @@ function is_me(row: number, column: number): boolean {
 }
 
 props.client_future.then(client => {
-    client.on<ClapResponseMessage>('clap', message => {
+    client.on<MonkeyActionResponseMessage>('monkey-action', message => {
         if (!is_me(message.row, message.column))
             return
 
-        switch (message.state) {
+        switch (message.action) {
             case 'ready': {
                 monkey_state.sprite = Sprite.Ready
                 monkey_state.offset = CLAP_READY_OFFSET

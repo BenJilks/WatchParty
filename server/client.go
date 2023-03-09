@@ -5,9 +5,9 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type ClapMessage struct {
-	State string `json:"state"`
-	Token string `json:"token"`
+type MonkeyActionMessage struct {
+	Action string `json:"action"`
+	Token  string `json:"token"`
 }
 
 type ChatMessage struct {
@@ -33,14 +33,14 @@ func handleClient(client Client, serverMessage chan<- ServerMessage) {
 		}).Trace("Got message")
 
 		switch message.Type {
-		case MessageClap:
-			var clapMessage ClapMessage
+		case MessageMonkeyAction:
+			var clapMessage MonkeyActionMessage
 			_ = json.Unmarshal(message.Data, &clapMessage)
 
 			serverMessage <- ServerMessage{
-				Type:  ServerMessageClap,
-				Token: client.Token,
-				State: clapMessage.State,
+				Type:   ServerMessageMonkeyAction,
+				Token:  client.Token,
+				Action: clapMessage.Action,
 			}
 
 		case MessageChat:

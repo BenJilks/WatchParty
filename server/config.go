@@ -6,13 +6,13 @@ const DefaultThumbnailsPath = StaticFilesPath + "/thumbnails"
 const DefaultDatabasePath = StaticFilesPath + "/watch-party.db"
 
 const (
-	MessageUpdateState = MessageType("update-state")
-	MessageClap        = MessageType("clap")
-	MessageChat        = MessageType("chat")
-	MessageVideoList   = MessageType("video-list")
-	MessageRequestPlay = MessageType("request-play")
-	MessageReady       = MessageType("ready")
-	MessageDisconnect  = MessageType("disconnect")
+	MessageUpdateState  = MessageType("update-state")
+	MessageMonkeyAction = MessageType("monkey-action")
+	MessageChat         = MessageType("chat")
+	MessageVideoList    = MessageType("video-list")
+	MessageRequestPlay  = MessageType("request-play")
+	MessageReady        = MessageType("ready")
+	MessageDisconnect   = MessageType("disconnect")
 )
 
 var RowSeatCount = []int{

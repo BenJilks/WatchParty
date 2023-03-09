@@ -17,7 +17,7 @@ const (
 	ServerMessageVideoList
 	ServerMessageRequestPlay
 	ServerMessageReady
-	ServerMessageClap
+	ServerMessageMonkeyAction
 	ServerMessageChat
 )
 
@@ -25,7 +25,7 @@ type ServerMessage struct {
 	Type   ServerMessageType
 	Client *Client
 	Token  *string
-	State  string
+	Action string
 
 	Message string
 
@@ -206,20 +206,20 @@ func (server *Server) ready(token string) {
 	}
 }
 
-type ClapResponseMessage struct {
-	State  string `json:"state"`
+type MonkeyActionResponseMessage struct {
+	Action string `json:"action"`
 	Row    int    `json:"row"`
 	Column int    `json:"column"`
 }
 
-func (server *Server) clap(token string, state string) {
+func (server *Server) monkeyAction(token string, action string) {
 	seat := server.stage.SeatForPlayer(token)
 	if seat == nil {
 		return
 	}
 
-	server.broadcastExcept(token, MessageClap, ClapResponseMessage{
-		State:  state,
+	server.broadcastExcept(token, MessageMonkeyAction, MonkeyActionResponseMessage{
+		Action: action,
 		Row:    seat.Row,
 		Column: seat.Column,
 	})
@@ -277,8 +277,8 @@ func (server *Server) handleMessage(message ServerMessage) {
 		server.requestPlay(message)
 	case ServerMessageReady:
 		server.ready(*message.Token)
-	case ServerMessageClap:
-		server.clap(*message.Token, message.State)
+	case ServerMessageMonkeyAction:
+		server.monkeyAction(*message.Token, message.Action)
 	case ServerMessageChat:
 		server.chat(*message.Token, message.Message)
 	default:

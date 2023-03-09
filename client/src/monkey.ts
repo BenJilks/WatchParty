@@ -7,14 +7,14 @@ export interface MonkeyData {
     your_token?: string,
 }
 
-export type ClapState = 'ready' | 'clap'
-export interface ClapMessage {
-    state: ClapState,
+export type MonkeyAction = 'ready' | 'clap'
+export interface MonkeyActionMessage {
+    action: MonkeyAction,
     token: string,
 }
 
-export interface ClapResponseMessage {
-    state: ClapState,
+export interface MonkeyActionResponseMessage {
+    action: MonkeyAction,
     row: number,
     column: number,
 }
