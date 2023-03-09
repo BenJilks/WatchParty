@@ -7,7 +7,11 @@ export interface MonkeyData {
     your_token?: string,
 }
 
-export type MonkeyAction = 'ready' | 'clap'
+export enum MonkeyAction {
+    Ready = 'ready',
+    Clap = 'clap',
+}
+
 export interface MonkeyActionMessage {
     action: MonkeyAction,
     token: string,

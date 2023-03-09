@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import type { MonkeyActionMessage, MonkeyActionResponseMessage, MonkeyAction, MonkeyData } from '@/monkey'
-import type { SocketClient } from "@/socket_client"
-import { reactive, ref } from 'vue'
+import type {MonkeyActionMessage, MonkeyActionResponseMessage, MonkeyData} from '@/monkey'
+import {MonkeyAction} from '@/monkey'
+import type {SocketClient} from '@/socket_client'
+import {reactive, ref} from 'vue'
 
 const CHAT_MESSAGE_TIME_MS = 2500
 const CLAP_TIME = 300
@@ -77,14 +78,14 @@ let idle_timeout: number | undefined = undefined
 function clap_down() {
     monkey_state.sprite = Sprite.Ready
     monkey_state.offset = CLAP_READY_OFFSET
-    send_action('ready')
+    send_action(MonkeyAction.Ready)
     clearTimeout(idle_timeout)
 }
 
 function clap_up() {
     monkey_state.sprite = Sprite.Clap
     monkey_state.offset = CLAP_OFFSET
-    send_action('clap')
+    send_action(MonkeyAction.Clap)
 
     const monkey_image = monkey_image_ref.value!
     monkey_image.onload = () => {
@@ -160,14 +161,14 @@ props.client_future.then(client => {
             return
 
         switch (message.action) {
-            case 'ready': {
+            case MonkeyAction.Ready: {
                 monkey_state.sprite = Sprite.Ready
                 monkey_state.offset = CLAP_READY_OFFSET
                 clearTimeout(idle_timeout)
                 break
             }
 
-            case 'clap': {
+            case MonkeyAction.Clap: {
                 monkey_state.sprite = Sprite.Clap
                 monkey_state.offset = CLAP_OFFSET
 
