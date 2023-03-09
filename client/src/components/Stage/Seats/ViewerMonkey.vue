@@ -107,11 +107,13 @@ if (props.monkey.your_token != undefined) {
             case 'ArrowLeft':
                 monkey_state.lean = -LEAN_ANGLE_DEGREES
                 monkey_state.lean_state = LeanState.Left
+                send_action(MonkeyAction.LeanLeft)
                 break
 
             case 'ArrowRight':
                 monkey_state.lean = LEAN_ANGLE_DEGREES
                 monkey_state.lean_state = LeanState.Right
+                send_action(MonkeyAction.LeanRight)
                 break
         }
     })
@@ -125,6 +127,7 @@ if (props.monkey.your_token != undefined) {
                 if (monkey_state.lean_state == LeanState.Left) {
                     monkey_state.lean = 0
                     monkey_state.lean_state = LeanState.None
+                    send_action(MonkeyAction.NoLean)
                 }
                 break
 
@@ -132,6 +135,7 @@ if (props.monkey.your_token != undefined) {
                 if (monkey_state.lean_state == LeanState.Right) {
                     monkey_state.lean = 0
                     monkey_state.lean_state = LeanState.None
+                    send_action(MonkeyAction.NoLean)
                 }
                 break
         }
@@ -183,6 +187,21 @@ props.client_future.then(client => {
 
                 break
             }
+
+            case MonkeyAction.LeanLeft:
+                monkey_state.lean = -LEAN_ANGLE_DEGREES
+                monkey_state.lean_state = LeanState.Left
+                break
+
+            case MonkeyAction.LeanRight:
+                monkey_state.lean = LEAN_ANGLE_DEGREES
+                monkey_state.lean_state = LeanState.Right
+                break
+
+            case MonkeyAction.NoLean:
+                monkey_state.lean = 0
+                monkey_state.lean_state = LeanState.None
+                break
         }
     })
 

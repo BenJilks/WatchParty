@@ -10,6 +10,10 @@ export interface MonkeyData {
 export enum MonkeyAction {
     Ready = 'ready',
     Clap = 'clap',
+
+    LeanLeft = 'lean-left',
+    LeanRight = 'lean-right',
+    NoLean = 'no-lean',
 }
 
 export interface MonkeyActionMessage {
