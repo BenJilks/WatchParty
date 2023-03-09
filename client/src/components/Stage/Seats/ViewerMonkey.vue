@@ -9,6 +9,7 @@ const CLAP_TIME = 300
 const IDLE_OFFSET = 1
 const CLAP_READY_OFFSET = 3
 const CLAP_OFFSET = 3
+const LEAN_ANGLE_DEGREES = 15
 
 interface Props {
     monkey: MonkeyData,
@@ -28,9 +29,17 @@ enum Sprite {
     Clap = 'clap',
 }
 
+enum LeanState {
+    None,
+    Left,
+    Right,
+}
+
 interface MonkeyState {
     sprite: Sprite,
     offset: number,
+    lean: number,
+    lean_state: LeanState,
 }
 
 interface ChatBubble {
@@ -44,6 +53,8 @@ const monkey_image_ref = ref<HTMLInputElement | null>(null)
 const monkey_state = reactive<MonkeyState>({
     sprite: Sprite.Idle,
     offset: IDLE_OFFSET,
+    lean: 0,
+    lean_state: LeanState.None,
 })
 
 const chat_message_enabled = ref(false)
@@ -52,10 +63,6 @@ const chat_message = reactive<ChatBubble>({
     show: false,
     animation_speed: 0.2,
 })
-
-function is_space(event: KeyboardEvent): boolean {
-    return event.code == 'Space'
-}
 
 async function update_clap_state(state: ClapState) {
     const client = await props.client_future
@@ -90,10 +97,44 @@ function clap_up() {
 }
 
 if (props.monkey.your_token != undefined) {
-    window.addEventListener('keydown', event =>
-            is_space(event) && clap_down())
-    window.addEventListener('keyup', event =>
-            is_space(event) && clap_up())
+    window.addEventListener('keydown', event => {
+        switch (event.code) {
+            case 'Space':
+                clap_down()
+                break
+
+            case 'ArrowLeft':
+                monkey_state.lean = -LEAN_ANGLE_DEGREES
+                monkey_state.lean_state = LeanState.Left
+                break
+
+            case 'ArrowRight':
+                monkey_state.lean = LEAN_ANGLE_DEGREES
+                monkey_state.lean_state = LeanState.Right
+                break
+        }
+    })
+    window.addEventListener('keyup', event => {
+        switch (event.code) {
+            case 'Space':
+                clap_up()
+                break
+
+            case 'ArrowLeft':
+                if (monkey_state.lean_state == LeanState.Left) {
+                    monkey_state.lean = 0
+                    monkey_state.lean_state = LeanState.None
+                }
+                break
+
+            case 'ArrowRight':
+                if (monkey_state.lean_state == LeanState.Right) {
+                    monkey_state.lean = 0
+                    monkey_state.lean_state = LeanState.None
+                }
+                break
+        }
+    })
 }
 
 function show_chat_message(message: string) {
@@ -172,13 +213,16 @@ props.client_future.then(client => {
 .monkey {
     position: absolute;
     left: 50%;
-    transform: translateX(-50%);
+    transform:
+        translateX(calc(-50% + v-bind('`${ 7 * monkey_state.lean / LEAN_ANGLE_DEGREES }%`')))
+        rotate(v-bind('`${ monkey_state.lean }deg`'));
 
     bottom: v-bind('`${ props.monkey.bottom + monkey_state.offset }vh`');
     height: v-bind('`${ props.monkey.height * 1.1 }vh`');
     margin-left: v-bind('`${ props.monkey.x_offset }vh`');
 
     filter: brightness(0.5);
+    transition: transform 0.2s;
 }
 
 .message-box {
