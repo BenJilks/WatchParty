@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { getCookieNumber, setCookie } from '@/cookie'
 import { computed, ref } from 'vue'
 
 interface Emits {
@@ -6,7 +7,7 @@ interface Emits {
 }
 const emit = defineEmits<Emits>()
 
-const volume = ref(1)
+const volume = ref(getCookieNumber("volume") ?? 0.5)
 const muted = ref(false)
 const over_slider = ref(false)
 const volume_bar_ref = ref<HTMLDivElement | null>(null)
@@ -27,6 +28,7 @@ function mouse_leave() {
 
 function set_volume(value: number) {
     volume.value = Math.min(Math.max(value, 0), 1)
+    setCookie('volume', volume.value.toString())
     emit('volume_change', volume.value)
 }
 
