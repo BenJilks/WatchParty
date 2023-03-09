@@ -17,16 +17,17 @@ interface Props {
 let is_seeking = false
 const buffered_segments = reactive<BufferedSegmentData[]>([])
 const seek_bar_ref = ref<HTMLDivElement>()
-const playback_data = ref<PlaybackData>({
+const time = ref<HTMLElement>()
+const playback_data = reactive<PlaybackData>({
     progress: 0,
-    duration: 1,
+    duration: 0.1,
     playing: false,
     syncing: true,
 })
 
 const props = defineProps<Props>()
 const progress_factor = computed(() =>
-        playback_data.value.progress / playback_data.value.duration)
+        playback_data.progress / playback_data.duration)
 
 function update_buffer_segments() {
     buffered_segments.splice(0)
@@ -40,7 +41,7 @@ watch(props.video, async () => {
     const client = await props.client_future
     const video = props.video.value!!
     const screen = props.screen.value!!
-    synced_video = new SyncedVideo(client, video, screen, playback_data)
+    synced_video = new SyncedVideo(client, video, screen, ref(playback_data))
 
     // NOTE: Ensure there's only ever a single interval
     clearInterval(buffer_updater.value)
@@ -49,13 +50,13 @@ watch(props.video, async () => {
 })
 
 async function play_pause() {
-    if (playback_data.value.syncing)
+    if (playback_data.syncing)
         return
     await synced_video?.send_toggle_play_pause()
 }
 
 function on_seek_start() {
-    if (is_seeking || playback_data.value.syncing) {
+    if (is_seeking || playback_data.syncing) {
         return
     }
 
@@ -96,6 +97,24 @@ async function change_video(video_path: string) {
     })
 }
 
+function format_time(time_in_ms: number): string {
+    const seconds = Math.floor(time_in_ms) % 60
+    const minutes = Math.floor(time_in_ms / 60) % 60
+    const hours = Math.floor(time_in_ms / (60 * 60)) % 60
+    const format_component = (component: number) =>
+        component >= 10 ? component : `0${ component }`
+
+    const result = `${format_component(minutes)}:${format_component(seconds)}`
+    if (hours > 0) {
+        return `${format_component(hours)}:${result}`
+    } else {
+        return result
+    }
+}
+
+const time_text = computed(() =>
+    `${ format_time(playback_data.progress) } / ${ format_time(playback_data.duration) }`)
+
 const volume = ref<typeof VolumeSlider>()
 const volume_slider_open = () => volume.value?.show_slider
 const get_is_seeking = () => is_seeking
@@ -125,6 +144,7 @@ defineExpose({
         <div id="scrubber" @mousedown="on_seek_start"></div>
     </div>
 
+    <text id="time">{{ time_text }}</text>
     <VolumeSlider ref="volume" @volume_change="volume_change" />
 </template>
 
@@ -168,5 +188,12 @@ defineExpose({
     cursor: pointer;
     pointer-events: all;
     user-modify: none;
+}
+
+#time {
+    display: inline-block;
+    width: auto;
+    word-break: keep-all;
+    white-space: nowrap;
 }
 </style>
