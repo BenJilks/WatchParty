@@ -7,12 +7,12 @@ import { seats_in_row } from '@/monkey'
 const ROW_COUNT = 7
 const rows = ref<typeof SeatRow[]>([])
 
-type Seat = {
+interface Seat {
     row: number,
-    column: number
+    column: number,
 }
 
-type MessageStateUpdate = {
+interface MessageStateUpdate {
     seats_not_free: Seat[],
     your_token: string,
     your_seat: Seat,

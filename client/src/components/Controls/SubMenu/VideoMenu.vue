@@ -16,11 +16,11 @@ interface Emits {
     (e: 'selected', video: string): void,
 }
 
-type VideoListMessage = {
+interface VideoListMessage {
     videos: VideoData[],
 }
 
-type AddYouTubeVideoMessage = {
+interface AddYouTubeVideoMessage {
     url: string,
 }
 

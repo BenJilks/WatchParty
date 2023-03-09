@@ -6,7 +6,7 @@ interface Props {
     client_future: Promise<SocketClient>,
 }
 
-type MessageChat = {
+interface MessageChat {
     message: string,
 }
 

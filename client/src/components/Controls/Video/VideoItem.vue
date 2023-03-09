@@ -1,5 +1,5 @@
 <script setup lang="ts">
-export type VideoData = {
+export interface VideoData {
     name: string,
     video_file: string,
     thumbnail_file: string,

@@ -1,5 +1,5 @@
 
-export type MonkeyData = {
+export interface MonkeyData {
     seat: number,
     bottom: number,
     height: number,
@@ -8,12 +8,12 @@ export type MonkeyData = {
 }
 
 export type ClapState = 'ready' | 'clap'
-export type ClapMessage = {
+export interface ClapMessage {
     state: ClapState,
     token: string,
 }
 
-export type ClapResponseMessage = {
+export interface ClapResponseMessage {
     state: ClapState,
     row: number,
     column: number,

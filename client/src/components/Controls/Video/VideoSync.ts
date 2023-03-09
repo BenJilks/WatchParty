@@ -2,19 +2,19 @@ import type StageScreen from '@/components/Stage/StageScreen.vue'
 import type { SocketClient } from '@/socket_client'
 import type {Ref} from "vue";
 
-export type PlaybackData = {
+export interface PlaybackData {
     progress: number,
     duration: number,
     playing: boolean,
     syncing: boolean,
 }
 
-export type BufferedSegmentData = {
+export interface BufferedSegmentData {
     start: number,
     end: number,
 }
 
-type RequestPlayMessage = {
+interface RequestPlayMessage {
     playing: boolean,
     progress: number,
     video?: string,

@@ -16,7 +16,7 @@ interface Props {
     client_future: Promise<SocketClient>,
 }
 
-type ChatResponseMessage = {
+interface ChatResponseMessage {
     message: string,
     row: number,
     column: number,
@@ -28,15 +28,26 @@ enum Sprite {
     Clap = 'clap',
 }
 
+interface MonkeyState {
+    sprite: Sprite,
+    offset: number,
+}
+
+interface ChatBubble {
+    message: string,
+    show: boolean,
+    animation_speed: number,
+}
+
 const props = defineProps<Props>()
 const monkey_image_ref = ref<HTMLInputElement | null>(null)
-const sprite = reactive({
-    name: Sprite.Idle,
+const monkey_state = reactive<MonkeyState>({
+    sprite: Sprite.Idle,
     offset: IDLE_OFFSET,
 })
 
 const chat_message_enabled = ref(false)
-const chat_message = reactive({
+const chat_message = reactive<ChatBubble>({
     message: '',
     show: false,
     animation_speed: 0.2,
@@ -57,22 +68,22 @@ async function update_clap_state(state: ClapState) {
 let idle_timeout: number | undefined = undefined
 
 function clap_down() {
-    sprite.name = Sprite.Ready
-    sprite.offset = CLAP_READY_OFFSET
+    monkey_state.sprite = Sprite.Ready
+    monkey_state.offset = CLAP_READY_OFFSET
     update_clap_state('ready')
     clearTimeout(idle_timeout)
 }
 
 function clap_up() {
-    sprite.name = Sprite.Clap
-    sprite.offset = CLAP_OFFSET
+    monkey_state.sprite = Sprite.Clap
+    monkey_state.offset = CLAP_OFFSET
     update_clap_state('clap')
 
     const monkey_image = monkey_image_ref.value!
     monkey_image.onload = () => {
         idle_timeout = setTimeout(() => {
-            sprite.name = Sprite.Idle
-            sprite.offset = IDLE_OFFSET
+            monkey_state.sprite = Sprite.Idle
+            monkey_state.offset = IDLE_OFFSET
         }, CLAP_TIME)
         monkey_image.onload = null
     }
@@ -109,21 +120,21 @@ props.client_future.then(client => {
 
         switch (message.state) {
             case 'ready': {
-                sprite.name = Sprite.Ready
-                sprite.offset = CLAP_READY_OFFSET
+                monkey_state.sprite = Sprite.Ready
+                monkey_state.offset = CLAP_READY_OFFSET
                 clearTimeout(idle_timeout)
                 break
             }
 
             case 'clap': {
-                sprite.name = Sprite.Clap
-                sprite.offset = CLAP_OFFSET
+                monkey_state.sprite = Sprite.Clap
+                monkey_state.offset = CLAP_OFFSET
 
                 const monkey_image = monkey_image_ref.value!
                 monkey_image.onload = () => {
                     idle_timeout = setTimeout(() => {
-                        sprite.name = Sprite.Idle
-                        sprite.offset = IDLE_OFFSET
+                        monkey_state.sprite = Sprite.Idle
+                        monkey_state.offset = IDLE_OFFSET
                     }, CLAP_TIME)
                     monkey_image.onload = null
                 }
@@ -143,7 +154,7 @@ props.client_future.then(client => {
 
 <template>
     <img
-        :src="`/monkeys/${ sprite.name }.png`"
+        :src="`/monkeys/${ monkey_state.sprite }.png`"
         ref="monkey_image_ref"
         class="monkey"
         alt="Moonkie"
@@ -163,7 +174,7 @@ props.client_future.then(client => {
     left: 50%;
     transform: translateX(-50%);
 
-    bottom: v-bind('`${ props.monkey.bottom + sprite.offset }vh`');
+    bottom: v-bind('`${ props.monkey.bottom + monkey_state.offset }vh`');
     height: v-bind('`${ props.monkey.height * 1.1 }vh`');
     margin-left: v-bind('`${ props.monkey.x_offset }vh`');
 
