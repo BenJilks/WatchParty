@@ -14,6 +14,8 @@ export enum MonkeyAction {
     LeanLeft = 'lean-left',
     LeanRight = 'lean-right',
     NoLean = 'no-lean',
+
+    Jump = 'jump',
 }
 
 export interface MonkeyActionMessage {

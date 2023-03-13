@@ -10,7 +10,9 @@ const CLAP_TIME = 300
 const IDLE_OFFSET = 1
 const CLAP_READY_OFFSET = 3
 const CLAP_OFFSET = 3
+
 const LEAN_ANGLE_DEGREES = 15
+const JUMP_HEIGHT = 15
 
 interface Props {
     monkey: MonkeyData,
@@ -30,17 +32,19 @@ enum Sprite {
     Clap = 'clap',
 }
 
-enum LeanState {
+enum AnimationState {
     None,
-    Left,
-    Right,
+    LeanLeft,
+    LeanRight,
+    Jump,
 }
 
 interface MonkeyState {
     sprite: Sprite,
     offset: number,
     lean: number,
-    lean_state: LeanState,
+    jump_offset: number,
+    animation_state: AnimationState,
 }
 
 interface ChatBubble {
@@ -55,7 +59,8 @@ const monkey_state = reactive<MonkeyState>({
     sprite: Sprite.Idle,
     offset: IDLE_OFFSET,
     lean: 0,
-    lean_state: LeanState.None,
+    jump_offset: 0,
+    animation_state: AnimationState.None,
 })
 
 const chat_message_enabled = ref(false)
@@ -97,6 +102,19 @@ function clap_up() {
     }
 }
 
+function do_jump_animation() {
+    const jump_time = 210
+    monkey_state.animation_state = AnimationState.Jump
+    monkey_state.jump_offset = JUMP_HEIGHT
+
+    setTimeout(() => {
+        monkey_state.jump_offset = 0
+    }, jump_time)
+    setTimeout(() => {
+        monkey_state.animation_state = AnimationState.None
+    }, jump_time * 2)
+}
+
 if (props.monkey.your_token != undefined) {
     window.addEventListener('keydown', event => {
         switch (event.code) {
@@ -105,15 +123,26 @@ if (props.monkey.your_token != undefined) {
                 break
 
             case 'ArrowLeft':
-                monkey_state.lean = -LEAN_ANGLE_DEGREES
-                monkey_state.lean_state = LeanState.Left
-                send_action(MonkeyAction.LeanLeft)
+                if (monkey_state.animation_state == AnimationState.None) {
+                    monkey_state.lean = -LEAN_ANGLE_DEGREES
+                    monkey_state.animation_state = AnimationState.LeanLeft
+                    send_action(MonkeyAction.LeanLeft)
+                }
                 break
 
             case 'ArrowRight':
-                monkey_state.lean = LEAN_ANGLE_DEGREES
-                monkey_state.lean_state = LeanState.Right
-                send_action(MonkeyAction.LeanRight)
+                if (monkey_state.animation_state == AnimationState.None) {
+                    monkey_state.lean = LEAN_ANGLE_DEGREES
+                    monkey_state.animation_state = AnimationState.LeanRight
+                    send_action(MonkeyAction.LeanRight)
+                }
+                break
+
+            case 'ArrowUp':
+                if (monkey_state.animation_state == AnimationState.None) {
+                    do_jump_animation()
+                    send_action(MonkeyAction.Jump)
+                }
                 break
         }
     })
@@ -124,17 +153,17 @@ if (props.monkey.your_token != undefined) {
                 break
 
             case 'ArrowLeft':
-                if (monkey_state.lean_state == LeanState.Left) {
+                if (monkey_state.animation_state == AnimationState.LeanLeft) {
                     monkey_state.lean = 0
-                    monkey_state.lean_state = LeanState.None
+                    monkey_state.animation_state = AnimationState.None
                     send_action(MonkeyAction.NoLean)
                 }
                 break
 
             case 'ArrowRight':
-                if (monkey_state.lean_state == LeanState.Right) {
+                if (monkey_state.animation_state == AnimationState.LeanRight) {
                     monkey_state.lean = 0
-                    monkey_state.lean_state = LeanState.None
+                    monkey_state.animation_state = AnimationState.None
                     send_action(MonkeyAction.NoLean)
                 }
                 break
@@ -190,17 +219,22 @@ props.client_future.then(client => {
 
             case MonkeyAction.LeanLeft:
                 monkey_state.lean = -LEAN_ANGLE_DEGREES
-                monkey_state.lean_state = LeanState.Left
+                monkey_state.animation_state = AnimationState.LeanLeft
                 break
 
             case MonkeyAction.LeanRight:
                 monkey_state.lean = LEAN_ANGLE_DEGREES
-                monkey_state.lean_state = LeanState.Right
+                monkey_state.animation_state = AnimationState.LeanRight
                 break
 
             case MonkeyAction.NoLean:
                 monkey_state.lean = 0
-                monkey_state.lean_state = LeanState.None
+                monkey_state.animation_state = AnimationState.None
+                break
+
+            case MonkeyAction.Jump:
+                monkey_state.lean = 0
+                do_jump_animation()
                 break
         }
     })
@@ -234,6 +268,7 @@ props.client_future.then(client => {
     position: absolute;
     left: 50%;
     transform:
+        translateY(v-bind('`${ -monkey_state.jump_offset }%`'))
         translateX(calc(-50% + v-bind('`${ 7 * monkey_state.lean / LEAN_ANGLE_DEGREES }%`')))
         rotate(v-bind('`${ monkey_state.lean }deg`'));
 
