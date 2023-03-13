@@ -1,6 +1,6 @@
 
 export function getCookie(name: string): string | null {
-    let component = document.cookie
+    const component = document.cookie
         .split(';')
         .map(component => component.trim())
         .find(component => component.indexOf(`${ name }=`) == 0)
