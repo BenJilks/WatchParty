@@ -17,7 +17,6 @@ interface Props {
 let is_seeking = false
 const buffered_segments = reactive<BufferedSegmentData[]>([])
 const seek_bar_ref = ref<HTMLDivElement>()
-const time = ref<HTMLElement>()
 const playback_data = reactive<PlaybackData>({
     progress: 0,
     duration: 0.1,
