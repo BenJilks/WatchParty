@@ -66,6 +66,7 @@ defineExpose({
     border: 0.2em solid #000;
 
     pointer-events: none;
+    z-index: 3;
 }
 
 .screen * {
