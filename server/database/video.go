@@ -40,12 +40,6 @@ func readVideoFrame(path string, outputPath string) error {
 		Run()
 }
 
-func videoName(videoName string) string {
-	extension := path.Ext(videoName)
-	name := videoName[:len(videoName)-len(extension)]
-	return name
-}
-
 func renderThumbnail(inputPath string, outputPath string) {
 	name := path.Base(outputPath)
 	if err := readVideoFrame(inputPath, outputPath); err != nil {
@@ -81,7 +75,7 @@ func generateThumbnailForFile(
 	thumbnailRequests chan<- ThumbnailRequest,
 ) string {
 	name := path.Base(inputPath)
-	fileName := fmt.Sprintf("%s.jpg", videoName(name))
+	fileName := fmt.Sprintf("%s.jpg", nameFromFile(name))
 
 	outputPath := path.Join(thumbnailPath, fileName)
 	thumbnailRequests <- ThumbnailRequest{
@@ -100,7 +94,7 @@ func createFileVideo(
 ) (Video, error) {
 	thumbnail := generateThumbnailForFile(thumbnailPath, videoPath, thumbnailRequests)
 	videoFilePath := path.Base(videoPath)
-	title := videoName(videoFilePath)
+	title := nameFromFile(videoFilePath)
 	video := Video{
 		Title:         title,
 		ThumbnailPath: thumbnail,

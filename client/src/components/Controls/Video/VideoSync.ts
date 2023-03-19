@@ -1,4 +1,4 @@
-import type StageScreen from '@/components/Stage/StageScreen.vue'
+import type StageScreen from '@/components/Stage/Screen/StageScreen.vue'
 import type { SocketClient } from '@/socket_client'
 import type {Ref} from "vue";
 
@@ -110,10 +110,11 @@ export default class SyncedVideo {
         if (!this.video.paused) {
             this.video.pause()
         }
+        this.screen.set_displayed_image(undefined)
         this.set_syncing(true)
 
         if (message.video ?? '' != '') {
-            this.video.src = `/vids/${ message.video }`
+            this.video.src = `/vids/${message.video}`
         }
         this.video.currentTime = message.progress
         this.playback_data.value.playing = message.playing

@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import VideoMenu from '@/components/Controls/SubMenu/VideoMenu.vue'
-import AnnotationMenu from '@/components/Controls/SubMenu/AnnotationMenu.vue'
+import GalleryMenu from '@/components/Controls/SubMenu/GalleryMenu.vue'
 import VideoControls from '@/components/Controls/Video/VideoControls.vue'
 import ChatBox from '@/components/Controls/ChatBox.vue'
-import type StageScreen from '@/components/Stage/StageScreen.vue'
+import type StageScreen from '@/components/Stage/Screen/StageScreen.vue'
+import type { ImageData } from '@/components/Stage/Screen/ImageViewer.vue'
 import type { SocketClient } from '@/socket_client'
 import type { Ref } from 'vue'
 import { computed, onMounted, ref } from 'vue'
@@ -15,24 +16,39 @@ interface Props {
 }
 
 const ratio_buttons = ref(new RatioButtons())
-const controls = ref<HTMLDivElement>()
-const controls_indicator = ref<HTMLDivElement>()
+const controls = ref<HTMLDivElement | null>(null)
+const controls_indicator = ref<HTMLDivElement | null>(null)
 
 const video_controls = ref<typeof VideoControls>()
 const props = defineProps<Props>()
 
-function change_video(video_file: string) {
-    console.log(`Selected video: '${ video_file }'`)
+function change_video(video_file: string, name: string) {
+    console.log(`Selected video: '${ video_file }' (${ name })`)
     video_controls.value?.change_video(video_file)
 }
 
-async function video_selected(video_file: string) {
-    change_video(video_file)
+function video_selected(video_file: string, name: string) {
+    change_video(video_file, name)
+    ratio_buttons.value.close_current()
+}
+
+interface ChangeImageMessage {
+    file: string,
+    name: string,
+}
+
+async function image_selected(image_file: string, name: string) {
+    const client = await props.client_future
+    client.send<ChangeImageMessage>('request-image', {
+        file: image_file,
+        name: name,
+    })
+
     ratio_buttons.value.close_current()
 }
 
 function set_controls_visible(visible: boolean) {
-    if (controls.value === undefined || controls_indicator.value === undefined) {
+    if (controls.value == null || controls_indicator.value == null) {
         return
     }
 
@@ -61,6 +77,15 @@ onMounted(async () => {
         props.screen.value?.set_hide_overlay_message(
             ratio_buttons.value.is_any_selected())
     })
+
+    const client = await props.client_future
+    client.on<ChangeImageMessage>('request-image', message => {
+        video_controls.value?.stop_video()
+        props.screen.value?.set_displayed_image({
+            file: message.file,
+            name: message.name,
+        })
+    })
 })
 </script>
 
@@ -80,9 +105,10 @@ onMounted(async () => {
         </div>
 
         <div class="panel">
-            <AnnotationMenu
-                :tools="computed(() => screen.value?.tools)"
-                :ratio_buttons="computed(() => ratio_buttons)" />
+            <GalleryMenu
+                :client_future="client_future"
+                :ratio_buttons="computed(() => ratio_buttons)"
+                @selected="image_selected" />
             <VideoMenu
                 :client_future="client_future"
                 :ratio_buttons="computed(() => ratio_buttons)"

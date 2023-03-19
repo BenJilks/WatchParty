@@ -3,6 +3,7 @@ package database
 import (
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+	"path"
 )
 
 func Open(filePath string) (*gorm.DB, error) {
@@ -12,9 +13,15 @@ func Open(filePath string) (*gorm.DB, error) {
 		return nil, err
 	}
 
-	if err := db.AutoMigrate(Video{}); err != nil {
+	if err := db.AutoMigrate(Video{}, Image{}); err != nil {
 		return nil, err
 	}
 
 	return db, nil
+}
+
+func nameFromFile(filePath string) string {
+	extension := path.Ext(filePath)
+	name := filePath[:len(filePath)-len(extension)]
+	return name
 }

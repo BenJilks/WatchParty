@@ -11,6 +11,7 @@ import (
 func setupDatabase(
 	databasePath string,
 	videosPath string,
+	imagesPath string,
 	thumbnailsPath string,
 ) (*gorm.DB, error) {
 	db, err := database.Open(databasePath)
@@ -19,6 +20,7 @@ func setupDatabase(
 	}
 
 	go database.ScanForNewFileVideos(db, videosPath, thumbnailsPath)
+	go database.ScanForNewFileImages(db, imagesPath, thumbnailsPath)
 	return db, nil
 }
 
@@ -30,11 +32,12 @@ func main() {
 	port := flag.Uint("port", 8080, "Port")
 
 	videosPath := flag.String("vids", DefaultVidsPath, "Path to videos")
+	imagesPath := flag.String("images", DefaultImagesPath, "Path to images")
 	thumbnailsPath := flag.String("thumbnails", DefaultThumbnailsPath, "Path to thumbnails")
 	databasePath := flag.String("database", DefaultDatabasePath, "Path to sqlite database file")
 	flag.Parse()
 
-	db, err := setupDatabase(*databasePath, *videosPath, *thumbnailsPath)
+	db, err := setupDatabase(*databasePath, *videosPath, *imagesPath, *thumbnailsPath)
 	if err != nil {
 		panic(err)
 	}

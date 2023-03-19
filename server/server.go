@@ -15,7 +15,9 @@ const (
 	ServerMessageJoin = ServerMessageType(iota)
 	ServerMessageLeave
 	ServerMessageVideoList
+	ServerMessageImageList
 	ServerMessageRequestPlay
+	ServerMessageRequestImage
 	ServerMessageReady
 	ServerMessageMonkeyAction
 	ServerMessageChat
@@ -32,7 +34,8 @@ type ServerMessage struct {
 	Playing  bool
 	Progress float64
 
-	VideoFile *string
+	File *string
+	Name string
 }
 
 type VideoPlaybackState struct {
@@ -123,14 +126,14 @@ func (server *Server) leave(token string) {
 	server.updateSeats()
 }
 
-type VideoDataMessage struct {
+type GalleryItemData struct {
 	Name          string `json:"name"`
-	VideoFile     string `json:"video_file"`
+	ItemFile      string `json:"item_file"`
 	ThumbnailFile string `json:"thumbnail_file"`
 }
 
 type VideoListMessage struct {
-	Videos []VideoDataMessage `json:"videos"`
+	Videos []GalleryItemData `json:"videos"`
 }
 
 func (server *Server) videoList(token string) {
@@ -145,11 +148,11 @@ func (server *Server) videoList(token string) {
 		return
 	}
 
-	var videoDataList = make([]VideoDataMessage, len(videos))
+	var videoDataList = make([]GalleryItemData, len(videos))
 	for i, video := range videos {
-		videoDataList[i] = VideoDataMessage{
+		videoDataList[i] = GalleryItemData{
 			Name:          video.Title,
-			VideoFile:     video.VideoFilePath,
+			ItemFile:      video.VideoFilePath,
 			ThumbnailFile: video.ThumbnailPath,
 		}
 	}
@@ -159,12 +162,42 @@ func (server *Server) videoList(token string) {
 	})
 }
 
+type ImageListMessage struct {
+	Images []GalleryItemData `json:"images"`
+}
+
+func (server *Server) imageList(token string) {
+	client, exists := server.connectedClients[token]
+	if !exists {
+		return
+	}
+
+	var images []database.Image
+	if result := server.db.Find(&images); result.Error != nil {
+		log.WithError(result.Error).Error("Unable to query videos")
+		return
+	}
+
+	var imageDataList = make([]GalleryItemData, len(images))
+	for i, image := range images {
+		imageDataList[i] = GalleryItemData{
+			Name:          image.Title,
+			ItemFile:      image.FilePath,
+			ThumbnailFile: image.ThumbnailPath,
+		}
+	}
+
+	_ = client.Send(MessageImageList, ImageListMessage{
+		Images: imageDataList,
+	})
+}
+
 func (server *Server) requestPlay(message ServerMessage) {
 	server.logRequest(message)
 
 	videoFile := server.videoState.VideoFile
-	if message.VideoFile != nil {
-		videoFile = *message.VideoFile
+	if message.File != nil {
+		videoFile = *message.File
 	}
 
 	server.videoState = VideoPlaybackState{
@@ -181,7 +214,31 @@ func (server *Server) requestPlay(message ServerMessage) {
 	server.broadcastExcept(*message.Token, MessageRequestPlay, RequestPlayMessage{
 		Playing:   message.Playing,
 		Progress:  message.Progress,
-		VideoFile: message.VideoFile,
+		VideoFile: message.File,
+	})
+}
+
+func (server *Server) requestImage(message ServerMessage) {
+	if message.File == nil {
+		log.Warn("Invalid image request")
+		return
+	}
+
+	log.WithFields(log.Fields{
+		"file": *message.File,
+		"name": message.Name,
+	}).Info("Got image request")
+
+	server.videoState = VideoPlaybackState{
+		Playing:            false,
+		Progress:           0,
+		VideoFile:          "",
+		LastProgressUpdate: time.Now(),
+	}
+
+	server.broadcastExcept("", MessageRequestImage, RequestImageMessage{
+		File: *message.File,
+		Name: message.Name,
 	})
 }
 
@@ -253,8 +310,8 @@ func (server *Server) chat(token string, message string) {
 
 func (server *Server) logRequest(message ServerMessage) {
 	videoFile := "None"
-	if message.VideoFile != nil {
-		videoFile = *message.VideoFile
+	if message.File != nil {
+		videoFile = *message.File
 	}
 
 	log.WithFields(log.Fields{
@@ -273,8 +330,12 @@ func (server *Server) handleMessage(message ServerMessage) {
 		server.leave(*message.Token)
 	case ServerMessageVideoList:
 		server.videoList(*message.Token)
+	case ServerMessageImageList:
+		server.imageList(*message.Token)
 	case ServerMessageRequestPlay:
 		server.requestPlay(message)
+	case ServerMessageRequestImage:
+		server.requestImage(message)
 	case ServerMessageReady:
 		server.ready(*message.Token)
 	case ServerMessageMonkeyAction:

@@ -1,23 +1,23 @@
 <script setup lang="ts">
-export interface VideoData {
+export interface ItemData {
     name: string,
-    video_file: string,
+    item_file: string,
     thumbnail_file: string,
 }
 
 interface Props {
-    video: VideoData,
+    item: ItemData,
 }
 
 interface Emits {
-    (e: 'selected', video_file: string): void,
+    (e: 'selected', item_file: string, name: string): void,
 }
 
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
 function selected() {
-    emit('selected', props.video.video_file)
+    emit('selected', props.item.item_file, props.item.name)
 }
 </script>
 
@@ -25,10 +25,10 @@ function selected() {
     <div class="item" @click="selected">
         <div id="content">
             <img
-                :src="`/thumbnails/${ props.video.thumbnail_file }`"
-                :alt="props.video.name"
+                :src="`/thumbnails/${ props.item.thumbnail_file }`"
+                :alt="props.item.name"
                 draggable="false" />
-            <text>{{ props.video.name }}</text>
+            <text>{{ props.item.name }}</text>
         </div>
     </div>
 </template>

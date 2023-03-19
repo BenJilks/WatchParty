@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import BufferedSegment from '@/components/Controls/Video/BufferedSegment.vue'
 import VolumeSlider from '@/components/Controls/Video/VolumeSlider.vue'
-import type StageScreen from '@/components/Stage/StageScreen.vue'
+import type StageScreen from '@/components/Stage/Screen/StageScreen.vue'
 import type { SocketClient } from '@/socket_client'
 import type { BufferedSegmentData, PlaybackData } from '@/components/Controls/Video/VideoSync'
 import type { Ref } from 'vue'
@@ -25,8 +25,12 @@ const playback_data = reactive<PlaybackData>({
 })
 
 const props = defineProps<Props>()
-const progress_factor = computed(() =>
-        playback_data.progress / playback_data.duration)
+const progress_factor = computed(() => {
+    if (playback_data.duration == 0) {
+        return 0
+    }
+    return playback_data.progress / playback_data.duration
+})
 
 function update_buffer_segments() {
     buffered_segments.splice(0)
@@ -96,6 +100,15 @@ async function change_video(video_path: string) {
     })
 }
 
+function stop_video() {
+    if (props.video.value === undefined) {
+        return
+    }
+
+    props.video.value.pause()
+    props.video.value.src = ''
+}
+
 function format_time(time_in_ms: number): string {
     const seconds = Math.floor(time_in_ms) % 60
     const minutes = Math.floor(time_in_ms / 60) % 60
@@ -120,6 +133,7 @@ const get_is_seeking = () => is_seeking
 
 defineExpose({
     change_video,
+    stop_video,
     volume_slider_open,
     get_is_seeking,
 })

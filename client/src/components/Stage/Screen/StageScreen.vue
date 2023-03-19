@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import Drawing from '@/components/Controls/Drawing/DrawingCanvas.vue'
-import VideoPlayer from '@/components/Controls/Video/VideoPlayer.vue'
+import VideoPlayer from '@/components/Stage/Screen/VideoPlayer.vue'
+import ImageViewer from '@/components/Stage/Screen/ImageViewer.vue'
+import type { ImageData } from '@/components/Stage/Screen/ImageViewer.vue'
 import { computed, ref } from 'vue'
 
 const screen = ref<HTMLDivElement>()
 const video_player = ref<typeof VideoPlayer>()
-const drawing = ref<typeof Drawing>()
+const displayed_image = ref<ImageData | undefined>(undefined)
 
 const overlay_message = ref<string | undefined>()
 const hide_overlay_message = ref(false)
@@ -15,15 +16,15 @@ const show_overlay_message = computed(() =>
 defineExpose({
     set_overlay_message: (value: string | undefined) => overlay_message.value = value,
     set_hide_overlay_message: (value: boolean) => hide_overlay_message.value = value,
+    set_displayed_image: (image?: ImageData) => displayed_image.value = image,
     video: computed(() => video_player.value?.video),
-    tools: computed(() => drawing.value?.tools),
 })
 </script>
 
 <template>
     <div class="screen" ref="screen">
+        <ImageViewer :image="displayed_image" />
         <VideoPlayer ref="video_player" />
-        <Drawing ref="drawing" />
 
         <div id="shadow-overlay"></div>
         <div class="overlay">

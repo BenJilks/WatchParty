@@ -20,6 +20,11 @@ type RequestPlayMessage struct {
 	VideoFile *string `json:"video"`
 }
 
+type RequestImageMessage struct {
+	File string `json:"file"`
+	Name string `json:"name"`
+}
+
 func handleClient(client Client, serverMessage chan<- ServerMessage) {
 	serverMessage <- ServerMessage{
 		Type:   ServerMessageJoin,
@@ -59,16 +64,33 @@ func handleClient(client Client, serverMessage chan<- ServerMessage) {
 				Token: client.Token,
 			}
 
+		case MessageImageList:
+			serverMessage <- ServerMessage{
+				Type:  ServerMessageImageList,
+				Token: client.Token,
+			}
+
 		case MessageRequestPlay:
 			var requestMessage RequestPlayMessage
 			_ = json.Unmarshal(message.Data, &requestMessage)
 
 			serverMessage <- ServerMessage{
-				Type:      ServerMessageRequestPlay,
-				Token:     client.Token,
-				Playing:   requestMessage.Playing,
-				Progress:  requestMessage.Progress,
-				VideoFile: requestMessage.VideoFile,
+				Type:     ServerMessageRequestPlay,
+				Token:    client.Token,
+				Playing:  requestMessage.Playing,
+				Progress: requestMessage.Progress,
+				File:     requestMessage.VideoFile,
+			}
+
+		case MessageRequestImage:
+			var requestMessage RequestImageMessage
+			_ = json.Unmarshal(message.Data, &requestMessage)
+
+			serverMessage <- ServerMessage{
+				Type:  ServerMessageRequestImage,
+				Token: client.Token,
+				File:  &requestMessage.File,
+				Name:  requestMessage.Name,
 			}
 
 		case MessageReady:
