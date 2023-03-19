@@ -6,6 +6,9 @@ import (
 	"path"
 )
 
+const ThumbnailScale = 400
+const ThumbnailWorkerPoolCount = 4
+
 func Open(filePath string) (*gorm.DB, error) {
 	sqliteDB := sqlite.Open(filePath)
 	db, err := gorm.Open(sqliteDB, &gorm.Config{})

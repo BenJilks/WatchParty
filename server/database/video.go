@@ -13,8 +13,6 @@ import (
 )
 
 const ThumbnailFrameNumber = 24 * 10
-const ThumbnailScale = 400
-const ThumbnailWorkerPoolCount = 4
 
 type VideoSourceType = string
 
@@ -40,7 +38,7 @@ func readVideoFrame(path string, outputPath string) error {
 		Run()
 }
 
-func renderThumbnail(inputPath string, outputPath string) {
+func renderVideoThumbnail(inputPath string, outputPath string) {
 	name := path.Base(outputPath)
 	if err := readVideoFrame(inputPath, outputPath); err != nil {
 		log.WithError(err).
@@ -52,33 +50,33 @@ func renderThumbnail(inputPath string, outputPath string) {
 	}
 }
 
-type ThumbnailRequest struct {
+type VideoThumbnailRequest struct {
 	inputPath  string
 	outputPath string
 }
 
-func thumbnailWorker(requests <-chan ThumbnailRequest) {
+func videoThumbnailWorker(requests <-chan VideoThumbnailRequest) {
 	for request := range requests {
-		renderThumbnail(request.inputPath, request.outputPath)
+		renderVideoThumbnail(request.inputPath, request.outputPath)
 	}
 }
 
-func startThumbnailWorkerPools(count int, requests <-chan ThumbnailRequest) {
+func startVideoThumbnailWorkerPools(count int, requests <-chan VideoThumbnailRequest) {
 	for i := 0; i < count; i++ {
-		go thumbnailWorker(requests)
+		go videoThumbnailWorker(requests)
 	}
 }
 
-func generateThumbnailForFile(
+func generateThumbnailForVideoFile(
 	thumbnailPath string,
 	inputPath string,
-	thumbnailRequests chan<- ThumbnailRequest,
+	thumbnailRequests chan<- VideoThumbnailRequest,
 ) string {
 	name := path.Base(inputPath)
 	fileName := fmt.Sprintf("%s.jpg", nameFromFile(name))
 
 	outputPath := path.Join(thumbnailPath, fileName)
-	thumbnailRequests <- ThumbnailRequest{
+	thumbnailRequests <- VideoThumbnailRequest{
 		inputPath:  inputPath,
 		outputPath: outputPath,
 	}
@@ -90,9 +88,9 @@ func createFileVideo(
 	db *gorm.DB,
 	videoPath string,
 	thumbnailPath string,
-	thumbnailRequests chan<- ThumbnailRequest,
+	thumbnailRequests chan<- VideoThumbnailRequest,
 ) (Video, error) {
-	thumbnail := generateThumbnailForFile(thumbnailPath, videoPath, thumbnailRequests)
+	thumbnail := generateThumbnailForVideoFile(thumbnailPath, videoPath, thumbnailRequests)
 	videoFilePath := path.Base(videoPath)
 	title := nameFromFile(videoFilePath)
 	video := Video{
@@ -151,8 +149,8 @@ func ScanForNewFileVideos(db *gorm.DB, videosPath string, thumbnailsPath string)
 		return
 	}
 
-	thumbnailRequests := make(chan ThumbnailRequest)
-	go startThumbnailWorkerPools(ThumbnailWorkerPoolCount, thumbnailRequests)
+	thumbnailRequests := make(chan VideoThumbnailRequest)
+	go startVideoThumbnailWorkerPools(ThumbnailWorkerPoolCount, thumbnailRequests)
 
 	err := filepath.WalkDir(videosPath, func(filePath string, info fs.DirEntry, err error) error {
 		if err != nil || info.IsDir() {
