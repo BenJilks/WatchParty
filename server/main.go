@@ -24,18 +24,47 @@ func setupDatabase(
 	return db, nil
 }
 
-func main() {
-	log.SetLevel(log.TraceLevel)
+func setLogLevel(levelName string) {
+	switch levelName {
+	case "panic":
+		log.SetLevel(log.PanicLevel)
+	case "fatal":
+		log.SetLevel(log.FatalLevel)
+	case "error":
+		log.SetLevel(log.ErrorLevel)
+	case "warn":
+		log.SetLevel(log.WarnLevel)
+	case "info":
+		log.SetLevel(log.InfoLevel)
+	case "debug":
+		log.SetLevel(log.DebugLevel)
+	case "trace":
+		log.SetLevel(log.TraceLevel)
+	default:
+		log.SetLevel(log.InfoLevel)
+		log.WithField("level", levelName).
+			Warn("Unknown log level name")
+		levelName = "info"
+	}
 
+	log.WithField("level", levelName).
+		Info("Using log level")
+}
+
+func main() {
 	certFile := flag.String("cert", "", "TLS cert file")
 	keyFile := flag.String("key", "", "TLS key file")
 	port := flag.Uint("port", 8080, "Port")
+	logLevel := flag.String("log-level", "info",
+		"Log level (panic, fatal, error, warn, info, debug and trace)")
 
 	videosPath := flag.String("vids", DefaultVidsPath, "Path to videos")
 	imagesPath := flag.String("images", DefaultImagesPath, "Path to images")
 	thumbnailsPath := flag.String("thumbnails", DefaultThumbnailsPath, "Path to thumbnails")
 	databasePath := flag.String("database", DefaultDatabasePath, "Path to sqlite database file")
+
 	flag.Parse()
+	setLogLevel(*logLevel)
 
 	db, err := setupDatabase(*databasePath, *videosPath, *imagesPath, *thumbnailsPath)
 	if err != nil {
