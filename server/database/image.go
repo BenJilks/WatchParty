@@ -1,11 +1,11 @@
 package database
 
 import (
+	"fmt"
 	log "github.com/sirupsen/logrus"
+	ffmpeg "github.com/u2takey/ffmpeg-go"
 	"gorm.io/gorm"
-	"io"
 	"io/fs"
-	"os"
 	"path"
 	"path/filepath"
 )
@@ -17,39 +17,65 @@ type Image struct {
 	FilePath      string
 }
 
-func generateImageThumbnailForFile(thumbnailPath string, imagePath string) string {
-	// TODO: Actually generate a smaller thumbnail, instead of just copying
-	name := path.Base(imagePath)
-	thumbnailFile := path.Join(thumbnailPath, name)
+func renderImageThumbnail(inputPath string, outputPath string) {
+	name := path.Base(outputPath)
+	err := ffmpeg.Input(inputPath).
+		Filter("scale", ffmpeg.Args{fmt.Sprintf("%d:-1", ThumbnailScale)}).
+		Output(outputPath, ffmpeg.KwArgs{"format": "image2", "vcodec": "mjpeg"}).
+		OverWriteOutput().
+		Run()
 
-	source, err := os.Open(imagePath)
 	if err != nil {
 		log.WithError(err).
-			Error("Unable to create thumbnail")
-		return ""
+			WithFields(log.Fields{"thumbnail": name, "type": "image"}).
+			Warnf("Unable to generate thumbnail for '%s'\n", inputPath)
+	} else {
+		log.WithFields(log.Fields{"thumbnail": name, "type": "image"}).
+			Info("Finished creating thumbnail")
 	}
-	defer source.Close()
+}
 
-	destination, err := os.Create(thumbnailFile)
-	if err != nil {
-		log.WithError(err).
-			Error("Unable to create thumbnail")
-		return ""
-	}
-	defer destination.Close()
+type ImageThumbnailRequest struct {
+	inputPath  string
+	outputPath string
+}
 
-	if _, err := io.Copy(destination, source); err != nil {
-		return ""
+func imageThumbnailWorker(requests <-chan ImageThumbnailRequest) {
+	for request := range requests {
+		renderImageThumbnail(request.inputPath, request.outputPath)
 	}
-	return name
+}
+
+func startImageThumbnailWorkerPools(count int, requests <-chan ImageThumbnailRequest) {
+	for i := 0; i < count; i++ {
+		go imageThumbnailWorker(requests)
+	}
+}
+
+func generateThumbnailForImageFile(
+	thumbnailPath string,
+	inputPath string,
+	thumbnailRequests chan<- ImageThumbnailRequest,
+) string {
+	name := path.Base(inputPath)
+	fileName := fmt.Sprintf("%s.jpg", nameFromFile(name))
+
+	outputPath := path.Join(thumbnailPath, fileName)
+	thumbnailRequests <- ImageThumbnailRequest{
+		inputPath:  inputPath,
+		outputPath: outputPath,
+	}
+
+	return fileName
 }
 
 func createFileImage(
 	db *gorm.DB,
 	videoPath string,
 	thumbnailPath string,
+	thumbnailRequests chan<- ImageThumbnailRequest,
 ) (Image, error) {
-	thumbnail := generateImageThumbnailForFile(thumbnailPath, videoPath)
+	thumbnail := generateThumbnailForImageFile(thumbnailPath, videoPath, thumbnailRequests)
 	videoFilePath := path.Base(videoPath)
 	title := nameFromFile(videoFilePath)
 	image := Image{
@@ -93,6 +119,9 @@ func ScanForNewFileImages(db *gorm.DB, imagesPath string, thumbnailsPath string)
 		return
 	}
 
+	thumbnailRequests := make(chan ImageThumbnailRequest)
+	go startImageThumbnailWorkerPools(ThumbnailWorkerPoolCount, thumbnailRequests)
+
 	err := filepath.WalkDir(imagesPath, func(filePath string, info fs.DirEntry, err error) error {
 		if err != nil || info.IsDir() {
 			return nil
@@ -104,7 +133,7 @@ func ScanForNewFileImages(db *gorm.DB, imagesPath string, thumbnailsPath string)
 		}
 
 		if !exists {
-			if _, err := createFileImage(db, filePath, thumbnailsPath); err != nil {
+			if _, err := createFileImage(db, filePath, thumbnailsPath, thumbnailRequests); err != nil {
 				log.WithError(err).
 					Warnf("Could not load image file '%s'", filePath)
 			}

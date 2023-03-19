@@ -42,10 +42,10 @@ func renderVideoThumbnail(inputPath string, outputPath string) {
 	name := path.Base(outputPath)
 	if err := readVideoFrame(inputPath, outputPath); err != nil {
 		log.WithError(err).
-			WithField("thumbnail", name).
+			WithFields(log.Fields{"thumbnail": name, "type": "video"}).
 			Warnf("Unable to generate thumbnail for '%s'\n", inputPath)
 	} else {
-		log.WithField("thumbnail", name).
+		log.WithFields(log.Fields{"thumbnail": name, "type": "video"}).
 			Info("Finished creating thumbnail")
 	}
 }
