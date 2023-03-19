@@ -17,6 +17,7 @@ module.exports = {
       {
         "argsIgnorePattern": "^_"
       }
-    ]
+    ],
+    'vue/no-mutating-props': 'off',
   }
 }

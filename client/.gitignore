@@ -8,6 +8,7 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
+package-lock.json
 .DS_Store
 dist
 dist-ssr
@@ -16,6 +17,10 @@ coverage
 
 /cypress/videos/
 /cypress/screenshots/
+
+public/vids
+public/images
+public/games
 
 # Editor directories and files
 .vscode/*
