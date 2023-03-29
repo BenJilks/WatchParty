@@ -29,7 +29,13 @@ export interface MonkeyActionResponseMessage {
     column: number,
 }
 
-const monkey_seat_data_table = [
+interface MonkeySeatRow {
+    bottom: number,
+    height: number,
+    seat_offsets: number[],
+}
+
+const monkey_seat_data_table: MonkeySeatRow[] = [
     { bottom: 14, height: 7, seat_offsets:
             [-45, -39.5, -34, -28, -23, -17.5, -12, -6, -1, 5, 11, 16.5, 22, 33, 38.5, 44] },
     { bottom: 12, height: 8, seat_offsets:
@@ -56,12 +62,12 @@ export function seats_in_row(row: number): number {
 }
 
 export function create_monkey(row: number, seat: number, your_token?: string): MonkeyData {
-    const { bottom, height, seat_offsets } = monkey_seat_data_table[row]
+    const seat_row= monkey_seat_data_table[row]
     return {
         seat: seat,
-        bottom: bottom,
-        height: height,
-        x_offset: seat_offsets[seat],
+        bottom: seat_row.bottom,
+        height: seat_row.height,
+        x_offset: seat_row.seat_offsets[seat],
         your_token: your_token,
     }
 }
