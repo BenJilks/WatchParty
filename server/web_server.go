@@ -40,6 +40,25 @@ const (
 	PathTypeDirectory
 )
 
+type DoubleWriter struct {
+	first  io.Writer
+	second io.Writer
+}
+
+func (doubleWriter DoubleWriter) Write(data []byte) (int, error) {
+	firstCount, err := doubleWriter.first.Write(data)
+	if err != nil {
+		return firstCount, err
+	}
+
+	secondCount, err := doubleWriter.second.Write(data[:firstCount])
+	if err != nil {
+		return secondCount, err
+	}
+
+	return firstCount, nil
+}
+
 func readFileDescription(filePath string) FileDescription {
 	contentType := mime.TypeByExtension(path.Ext(filePath))
 
@@ -57,25 +76,6 @@ func readFileDescription(filePath string) FileDescription {
 		size:         &size,
 		lastModified: &lastModified,
 	}
-}
-
-type DoubleWriter struct {
-	first  io.Writer
-	second io.Writer
-}
-
-func (doubleWriter *DoubleWriter) Write(data []byte) (int, error) {
-	firstCount, err := doubleWriter.first.Write(data)
-	if err != nil {
-		return firstCount, err
-	}
-
-	secondCount, err := doubleWriter.second.Write(data[:firstCount])
-	if err != nil {
-		return secondCount, err
-	}
-
-	return firstCount, nil
 }
 
 func gzipAndServeFile(filePath string, gzippedFilePath string, response http.ResponseWriter) error {
@@ -185,13 +185,19 @@ func (fileCache *GzipFileCache) serveFile(response http.ResponseWriter, request 
 		return
 	}
 
+	// NOTE: Don't gzip video content.
+	mimeType := mime.TypeByExtension(path.Ext(filePath))
+	if len(mimeType) >= 5 && mimeType[:5] == "video" {
+		http.ServeFile(response, request, filePath)
+		return
+	}
+
 	if err := fileCache.serveGzipFile(response, filePath); err != nil {
 		log.WithError(err).
 			WithField("file", filePath).
 			Error("Could not serve file gzipped")
 		http.ServeFile(response, request, filePath)
 	}
-
 }
 
 func getPathType(filePath string) PathType {
