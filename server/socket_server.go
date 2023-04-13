@@ -7,7 +7,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	"net/http"
 	"nhooyr.io/websocket"
-	"path"
 )
 
 type MessageType string
@@ -91,21 +90,22 @@ func handleSocketConnection(
 	}
 }
 
-func handleConnection(response http.ResponseWriter, request *http.Request, clients chan<- Client) {
-	url := request.URL.Path
-	log.WithField("url", url).Trace("Got HTTP request")
+func connectionHandler(clients chan<- Client, webHandler http.HandlerFunc) http.HandlerFunc {
+	return func(response http.ResponseWriter, request *http.Request) {
+		url := request.URL.Path
+		log.WithField("url", url).Trace("Got HTTP request")
 
-	if request.Header.Get("Upgrade") == "websocket" && url == "/socket" {
-		handleSocketConnection(response, request, clients)
-		return
+		if request.Header.Get("Upgrade") == "websocket" && url == "/socket" {
+			handleSocketConnection(response, request, clients)
+			return
+		}
+
+		if url == "/" {
+			url = "/index.html"
+		}
+
+		webHandler(response, request)
 	}
-
-	if url == "/" {
-		url = "/index.html"
-	}
-
-	filePath := path.Join(StaticFilesPath, url)
-	http.ServeFile(response, request, filePath)
 }
 
 func StartSocketServer(address string, certFile string, keyFile string, clients chan<- Client) {
@@ -120,10 +120,8 @@ func StartSocketServer(address string, certFile string, keyFile string, clients 
 		"TLS":     useTLS,
 	}).Info("Started listening for connections")
 
-	handler := http.HandlerFunc(
-		func(response http.ResponseWriter, request *http.Request) {
-			handleConnection(response, request, clients)
-		})
+	webHandler := WebHandler(StaticFilesPath)
+	handler := connectionHandler(clients, webHandler)
 
 	if useTLS {
 		_ = http.ListenAndServeTLS(address, certFile, keyFile, handler)
