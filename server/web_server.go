@@ -11,6 +11,7 @@ import (
 	"os"
 	"path"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -19,11 +20,13 @@ const TempDirectoryName = "watch-party"
 type CachedFile struct {
 	Time         time.Time
 	BeingWritten bool
+	Size         int64
 }
 
 type GzipFileCache struct {
 	tempDirectory string
 	cache         map[string]CachedFile
+	mutex         sync.Mutex
 }
 
 type FileDescription struct {
@@ -78,16 +81,16 @@ func readFileDescription(filePath string) FileDescription {
 	}
 }
 
-func gzipAndServeFile(filePath string, gzippedFilePath string, response http.ResponseWriter) error {
+func gzipAndServeFile(filePath string, gzippedFilePath string, response http.ResponseWriter) (int64, error) {
 	originalFile, err := os.Open(filePath)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	defer originalFile.Close()
 
 	gzippedFile, err := os.Create(gzippedFilePath)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	defer gzippedFile.Close()
 
@@ -98,20 +101,16 @@ func gzipAndServeFile(filePath string, gzippedFilePath string, response http.Res
 	defer writer.Close()
 
 	response.Header().Set("Content-Encoding", "gzip")
-	_, err = io.Copy(writer, originalFile)
-	return err
+	return io.Copy(writer, originalFile)
 }
 
-func serveCachedGzippedFile(response http.ResponseWriter, filePath string) error {
-	if fileInfo, err := os.Stat(filePath); err == nil {
-		response.Header().Set("Content-Length", fmt.Sprint(fileInfo.Size()))
-	}
-
+func serveCachedGzippedFile(response http.ResponseWriter, filePath string, size int64) error {
 	file, err := os.Open(filePath)
 	if err != nil {
 		return err
 	}
 
+	response.Header().Set("Content-Length", fmt.Sprint(size))
 	response.Header().Set("Content-Encoding", "gzip")
 	_, err = io.Copy(response, file)
 	return err
@@ -125,7 +124,10 @@ func (fileCache *GzipFileCache) getCachedGzippedFile(
 	cacheName = strings.ReplaceAll(cacheName, ".", "_")
 	gzippedFilePath := path.Join(fileCache.tempDirectory, cacheName+".gz")
 
+	fileCache.mutex.Lock()
 	cachedFile, inCache := fileCache.cache[filePath]
+	fileCache.mutex.Unlock()
+
 	if inCache && !description.lastModified.After(cachedFile.Time) {
 		return gzippedFilePath, &cachedFile
 	}
@@ -142,20 +144,26 @@ func (fileCache *GzipFileCache) cacheAndServeFile(
 	log.WithField("file", filePath).
 		Info("Updating gzip cache")
 
+	fileCache.mutex.Lock()
 	fileCache.cache[filePath] = CachedFile{
 		Time:         *description.lastModified,
 		BeingWritten: true,
 	}
+	fileCache.mutex.Unlock()
 
-	if err := gzipAndServeFile(filePath, gzippedFilePath, response); err != nil {
+	size, err := gzipAndServeFile(filePath, gzippedFilePath, response)
+	if err != nil {
 		delete(fileCache.cache, filePath)
 		return err
 	}
 
+	fileCache.mutex.Lock()
 	fileCache.cache[filePath] = CachedFile{
 		Time:         *description.lastModified,
 		BeingWritten: false,
+		Size:         size,
 	}
+	fileCache.mutex.Unlock()
 	return nil
 }
 
@@ -171,7 +179,7 @@ func (fileCache *GzipFileCache) serveGzipFile(response http.ResponseWriter, file
 		if cachedFile.BeingWritten {
 			return errors.New("file currently being cached")
 		}
-		return serveCachedGzippedFile(response, gzippedFilePath)
+		return serveCachedGzippedFile(response, gzippedFilePath, cachedFile.Size)
 	}
 
 	return fileCache.cacheAndServeFile(
@@ -252,6 +260,7 @@ func WebHandler(staticPath string) http.HandlerFunc {
 	fileCache := GzipFileCache{
 		tempDirectory: tempDirectory,
 		cache:         map[string]CachedFile{},
+		mutex:         sync.Mutex{},
 	}
 
 	return func(response http.ResponseWriter, request *http.Request) {
