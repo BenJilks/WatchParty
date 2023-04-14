@@ -5,6 +5,7 @@ import (
 	"fmt"
 	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+	"runtime"
 	"watch-party/database"
 )
 
@@ -19,8 +20,18 @@ func setupDatabase(
 		return nil, err
 	}
 
-	go database.ScanForNewFileVideos(db, videosPath, thumbnailsPath)
-	go database.ScanForNewFileImages(db, imagesPath, thumbnailsPath)
+	cpuCount := runtime.NumCPU() - 1
+	if cpuCount <= 0 {
+		cpuCount = 1
+	}
+
+	log.WithField("worker-count", cpuCount).
+		Info("Starting FFMPeg workers")
+
+	requests := make(chan database.FFMPegRequest)
+	go database.StartFFMPegWorkerPools(cpuCount, requests)
+	go database.ScanForNewFileVideos(db, videosPath, thumbnailsPath, requests)
+	go database.ScanForNewFileImages(db, imagesPath, thumbnailsPath, requests)
 	return db, nil
 }
 

@@ -17,53 +17,27 @@ type Image struct {
 	FilePath      string
 }
 
-func renderImageThumbnail(inputPath string, outputPath string) {
-	name := path.Base(outputPath)
-	err := ffmpeg.Input(inputPath).
+func renderImageThumbnail(inputPath string, outputPath string) *ffmpeg.Stream {
+	return ffmpeg.Input(inputPath).
 		Filter("scale", ffmpeg.Args{fmt.Sprintf("%d:-1", ThumbnailScale)}).
 		Output(outputPath, ffmpeg.KwArgs{"format": "image2", "vcodec": "mjpeg"}).
-		OverWriteOutput().
-		Run()
-
-	if err != nil {
-		log.WithError(err).
-			WithFields(log.Fields{"thumbnail": name, "type": "image"}).
-			Warnf("Unable to generate thumbnail for '%s'\n", inputPath)
-	} else {
-		log.WithFields(log.Fields{"thumbnail": name, "type": "image"}).
-			Info("Finished creating thumbnail")
-	}
-}
-
-type ImageThumbnailRequest struct {
-	inputPath  string
-	outputPath string
-}
-
-func imageThumbnailWorker(requests <-chan ImageThumbnailRequest) {
-	for request := range requests {
-		renderImageThumbnail(request.inputPath, request.outputPath)
-	}
-}
-
-func startImageThumbnailWorkerPools(count int, requests <-chan ImageThumbnailRequest) {
-	for i := 0; i < count; i++ {
-		go imageThumbnailWorker(requests)
-	}
+		OverWriteOutput()
 }
 
 func generateThumbnailForImageFile(
 	thumbnailPath string,
 	inputPath string,
-	thumbnailRequests chan<- ImageThumbnailRequest,
+	thumbnailRequests chan<- FFMPegRequest,
 ) string {
 	name := path.Base(inputPath)
 	fileName := fmt.Sprintf("%s.jpg", nameFromFile(name))
 
 	outputPath := path.Join(thumbnailPath, fileName)
-	thumbnailRequests <- ImageThumbnailRequest{
+	thumbnailRequests <- FFMPegRequest{
 		inputPath:  inputPath,
 		outputPath: outputPath,
+		stream:     renderImageThumbnail(inputPath, outputPath),
+		typeName:   "image",
 	}
 
 	return fileName
@@ -73,7 +47,7 @@ func createFileImage(
 	db *gorm.DB,
 	videoPath string,
 	thumbnailPath string,
-	thumbnailRequests chan<- ImageThumbnailRequest,
+	thumbnailRequests chan<- FFMPegRequest,
 ) (Image, error) {
 	thumbnail := generateThumbnailForImageFile(thumbnailPath, videoPath, thumbnailRequests)
 	videoFilePath := path.Base(videoPath)
@@ -110,7 +84,12 @@ func imageExists(db *gorm.DB, filePath string) (bool, error) {
 	return count > 0, nil
 }
 
-func ScanForNewFileImages(db *gorm.DB, imagesPath string, thumbnailsPath string) {
+func ScanForNewFileImages(
+	db *gorm.DB,
+	imagesPath string,
+	thumbnailsPath string,
+	thumbnailRequests chan<- FFMPegRequest,
+) {
 	log.Infof("Scanning '%s' for new file images", imagesPath)
 	if err := createDirIfNotExist(thumbnailsPath); err != nil {
 		log.WithError(err).
@@ -118,9 +97,6 @@ func ScanForNewFileImages(db *gorm.DB, imagesPath string, thumbnailsPath string)
 			Error("Need path to store thumbnails")
 		return
 	}
-
-	thumbnailRequests := make(chan ImageThumbnailRequest)
-	go startImageThumbnailWorkerPools(ThumbnailWorkerPoolCount, thumbnailRequests)
 
 	err := filepath.WalkDir(imagesPath, func(filePath string, info fs.DirEntry, err error) error {
 		if err != nil || info.IsDir() {
