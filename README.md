@@ -5,7 +5,12 @@ Join a theater and watch your favourite movies or videos together, and clap alon
 This project requires `go` and `npm` to build, and `ffmpeg` during runtime.
 
 ## Build
-First build the client, using the following
+All submodules need to be initialized first. You can do this with the command:
+```
+    $ git submodule update --init --recursive
+```
+
+Then, build the Vue based client with npm.
 ```
     $ cd client
     $ npm run install
@@ -13,11 +18,13 @@ First build the client, using the following
     $ cd ..
 ```
 
-Then you can start the server
+Finally, you can start the Go server.
 ```
     $ cd server
     $ go run .
 ```
+
+Or build a binary for distribution.
 
 Use the `-help` command line option on the server for configuring.
 
