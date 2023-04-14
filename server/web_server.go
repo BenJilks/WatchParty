@@ -29,12 +29,6 @@ type GzipFileCache struct {
 	mutex         sync.Mutex
 }
 
-type FileDescription struct {
-	contentType  string
-	size         *int64
-	lastModified *time.Time
-}
-
 type PathType int
 
 const (
@@ -42,6 +36,15 @@ const (
 	PathTypeFile
 	PathTypeDirectory
 )
+
+type PathDescription struct {
+	pathType PathType
+	rawPath  string
+
+	contentType  *string
+	size         *int64
+	lastModified *time.Time
+}
 
 type DoubleWriter struct {
 	first  io.Writer
@@ -62,20 +65,30 @@ func (doubleWriter DoubleWriter) Write(data []byte) (int, error) {
 	return firstCount, nil
 }
 
-func readFileDescription(filePath string) FileDescription {
-	contentType := mime.TypeByExtension(path.Ext(filePath))
-
+func readPathDescription(filePath string) PathDescription {
 	fileInfo, err := os.Stat(filePath)
 	if err != nil {
-		return FileDescription{
-			contentType: contentType,
+		return PathDescription{
+			pathType: PathTypeNothing,
+			rawPath:  filePath,
 		}
 	}
 
-	size := fileInfo.Size()
 	lastModified := fileInfo.ModTime()
-	return FileDescription{
-		contentType:  contentType,
+	if fileInfo.IsDir() {
+		return PathDescription{
+			pathType:     PathTypeDirectory,
+			rawPath:      filePath,
+			lastModified: &lastModified,
+		}
+	}
+
+	contentType := mime.TypeByExtension(path.Ext(filePath))
+	size := fileInfo.Size()
+	return PathDescription{
+		pathType:     PathTypeFile,
+		rawPath:      filePath,
+		contentType:  &contentType,
 		size:         &size,
 		lastModified: &lastModified,
 	}
@@ -116,16 +129,13 @@ func serveCachedGzippedFile(response http.ResponseWriter, filePath string, size 
 	return err
 }
 
-func (fileCache *GzipFileCache) getCachedGzippedFile(
-	description FileDescription,
-	filePath string,
-) (string, *CachedFile) {
-	cacheName := strings.ReplaceAll(filePath, "/", "_")
+func (fileCache *GzipFileCache) getCachedGzippedFile(description PathDescription) (string, *CachedFile) {
+	cacheName := strings.ReplaceAll(description.rawPath, "/", "_")
 	cacheName = strings.ReplaceAll(cacheName, ".", "_")
 	gzippedFilePath := path.Join(fileCache.tempDirectory, cacheName+".gz")
 
 	fileCache.mutex.Lock()
-	cachedFile, inCache := fileCache.cache[filePath]
+	cachedFile, inCache := fileCache.cache[description.rawPath]
 	fileCache.mutex.Unlock()
 
 	if inCache && !description.lastModified.After(cachedFile.Time) {
@@ -137,28 +147,27 @@ func (fileCache *GzipFileCache) getCachedGzippedFile(
 
 func (fileCache *GzipFileCache) cacheAndServeFile(
 	response http.ResponseWriter,
-	description FileDescription,
-	filePath string,
+	description PathDescription,
 	gzippedFilePath string,
 ) error {
-	log.WithField("file", filePath).
+	log.WithField("file", description.rawPath).
 		Info("Updating gzip cache")
 
 	fileCache.mutex.Lock()
-	fileCache.cache[filePath] = CachedFile{
+	fileCache.cache[description.rawPath] = CachedFile{
 		Time:         *description.lastModified,
 		BeingWritten: true,
 	}
 	fileCache.mutex.Unlock()
 
-	size, err := gzipAndServeFile(filePath, gzippedFilePath, response)
+	size, err := gzipAndServeFile(description.rawPath, gzippedFilePath, response)
 	if err != nil {
-		delete(fileCache.cache, filePath)
+		delete(fileCache.cache, description.rawPath)
 		return err
 	}
 
 	fileCache.mutex.Lock()
-	fileCache.cache[filePath] = CachedFile{
+	fileCache.cache[description.rawPath] = CachedFile{
 		Time:         *description.lastModified,
 		BeingWritten: false,
 		Size:         size,
@@ -167,14 +176,16 @@ func (fileCache *GzipFileCache) cacheAndServeFile(
 	return nil
 }
 
-func (fileCache *GzipFileCache) serveGzipFile(response http.ResponseWriter, filePath string) error {
-	description := readFileDescription(filePath)
-	if description.lastModified == nil {
-		return errors.New("could not stat file")
+func (fileCache *GzipFileCache) serveGzipFile(
+	response http.ResponseWriter,
+	description PathDescription,
+) error {
+	if description.pathType != PathTypeFile {
+		return errors.New("file doesn't exist")
 	}
 
-	response.Header().Set("Content-Type", description.contentType)
-	gzippedFilePath, cachedFile := fileCache.getCachedGzippedFile(description, filePath)
+	response.Header().Set("Content-Type", *description.contentType)
+	gzippedFilePath, cachedFile := fileCache.getCachedGzippedFile(description)
 	if cachedFile != nil {
 		if cachedFile.BeingWritten {
 			return errors.New("file currently being cached")
@@ -183,45 +194,36 @@ func (fileCache *GzipFileCache) serveGzipFile(response http.ResponseWriter, file
 	}
 
 	return fileCache.cacheAndServeFile(
-		response, description, filePath, gzippedFilePath)
+		response, description, gzippedFilePath)
 }
 
-func (fileCache *GzipFileCache) serveFile(response http.ResponseWriter, request *http.Request, filePath string) {
+func (fileCache *GzipFileCache) serveFile(
+	response http.ResponseWriter,
+	request *http.Request,
+	description PathDescription,
+) {
 	acceptEncoding := request.Header.Get("Accept-Encoding")
 	if !strings.Contains(acceptEncoding, "gzip") {
-		http.ServeFile(response, request, filePath)
+		http.ServeFile(response, request, description.rawPath)
 		return
 	}
 
 	// NOTE: Don't gzip video content.
-	mimeType := mime.TypeByExtension(path.Ext(filePath))
+	mimeType := mime.TypeByExtension(path.Ext(description.rawPath))
 	if len(mimeType) >= 5 && mimeType[:5] == "video" {
-		http.ServeFile(response, request, filePath)
+		http.ServeFile(response, request, description.rawPath)
 		return
 	}
 
-	if err := fileCache.serveGzipFile(response, filePath); err != nil {
+	if err := fileCache.serveGzipFile(response, description); err != nil {
 		log.WithError(err).
-			WithField("file", filePath).
+			WithField("file", description.rawPath).
 			Error("Could not serve file gzipped")
-		http.ServeFile(response, request, filePath)
+		http.ServeFile(response, request, description.rawPath)
 	}
 }
 
-func getPathType(filePath string) PathType {
-	info, err := os.Stat(filePath)
-	if err != nil {
-		return PathTypeNothing
-	}
-
-	if info.IsDir() {
-		return PathTypeDirectory
-	} else {
-		return PathTypeFile
-	}
-}
-
-func firstValidIndexPath(directoryPath string) *string {
+func firstValidIndexPath(directoryPath string) PathDescription {
 	validIndexFiles := []string{
 		"index.html",
 		"index.htm",
@@ -229,12 +231,15 @@ func firstValidIndexPath(directoryPath string) *string {
 
 	for _, indexFile := range validIndexFiles {
 		indexPath := path.Join(directoryPath, indexFile)
-		if getPathType(indexPath) == PathTypeFile {
-			return &indexPath
+		description := readPathDescription(indexPath)
+		if description.pathType == PathTypeFile {
+			return description
 		}
 	}
 
-	return nil
+	return PathDescription{
+		pathType: PathTypeNothing,
+	}
 }
 
 func (fileCache *GzipFileCache) serveDirectory(
@@ -242,8 +247,8 @@ func (fileCache *GzipFileCache) serveDirectory(
 	request *http.Request,
 	directoryPath string,
 ) {
-	if indexPath := firstValidIndexPath(directoryPath); indexPath != nil {
-		fileCache.serveFile(response, request, *indexPath)
+	if description := firstValidIndexPath(directoryPath); description.pathType != PathTypeNothing {
+		fileCache.serveFile(response, request, description)
 		return
 	}
 
@@ -252,7 +257,7 @@ func (fileCache *GzipFileCache) serveDirectory(
 
 func WebHandler(staticPath string) http.HandlerFunc {
 	tempDirectory := path.Join(os.TempDir(), TempDirectoryName)
-	_ = os.Mkdir(tempDirectory, os.ModeDir|os.ModePerm)
+	_ = os.MkdirAll(tempDirectory, os.ModeDir|os.ModePerm)
 
 	log.WithField("cache-path", tempDirectory).
 		Info("Using gzip cache")
@@ -269,11 +274,12 @@ func WebHandler(staticPath string) http.HandlerFunc {
 
 		url := request.URL.Path
 		filePath := path.Join(staticPath, url)
-		switch getPathType(filePath) {
+		description := readPathDescription(filePath)
+		switch description.pathType {
 		case PathTypeNothing:
 			http.ServeFile(response, request, filePath)
 		case PathTypeFile:
-			fileCache.serveFile(response, request, filePath)
+			fileCache.serveFile(response, request, description)
 		case PathTypeDirectory:
 			fileCache.serveDirectory(response, request, filePath)
 		}
