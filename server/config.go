@@ -1,10 +1,10 @@
 package main
 
-const StaticFilesPath = "../client/dist"
-const DefaultVidsPath = StaticFilesPath + "/vids"
-const DefaultImagesPath = StaticFilesPath + "/images"
-const DefaultThumbnailsPath = StaticFilesPath + "/thumbnails"
-const DefaultDatabasePath = StaticFilesPath + "/watch-party.db"
+const DefaultStaticFilesPath = "../client/dist"
+const DefaultVidsPath = DefaultStaticFilesPath + "/vids"
+const DefaultImagesPath = DefaultStaticFilesPath + "/images"
+const DefaultThumbnailsPath = DefaultStaticFilesPath + "/thumbnails"
+const DefaultDatabasePath = DefaultStaticFilesPath + "/watch-party.db"
 
 const (
 	MessageUpdateState  = MessageType("update-state")

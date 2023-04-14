@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	webserver "github.com/benjilks/tinywebserver"
 	log "github.com/sirupsen/logrus"
 	"net/http"
 	"nhooyr.io/websocket"
@@ -108,24 +109,25 @@ func connectionHandler(clients chan<- Client, webHandler http.HandlerFunc) http.
 	}
 }
 
-func StartSocketServer(address string, certFile string, keyFile string, clients chan<- Client) {
-	useTLS := certFile != "" && keyFile != ""
-	addressFormat := "http://%s"
+func StartSocketServer(config webserver.WebServerConfig, clients chan<- Client) {
+	useTLS := config.CertFilePath != "" && config.KeyFilePath != ""
+	addressFormat := "http://%s:%d"
 	if useTLS {
-		addressFormat = "https://%s"
+		addressFormat = "https://%s:%d"
 	}
 
 	log.WithFields(log.Fields{
-		"address": fmt.Sprintf(addressFormat, address),
+		"address": fmt.Sprintf(addressFormat, config.Address, config.Port),
 		"TLS":     useTLS,
 	}).Info("Started listening for connections")
 
-	webHandler := WebHandler(StaticFilesPath)
+	webHandler := webserver.WebHandler(config)
 	handler := connectionHandler(clients, webHandler)
 
+	bindAddress := fmt.Sprintf("%s:%d", config.Address, config.Port)
 	if useTLS {
-		_ = http.ListenAndServeTLS(address, certFile, keyFile, handler)
+		_ = http.ListenAndServeTLS(bindAddress, config.CertFilePath, config.KeyFilePath, handler)
 	} else {
-		_ = http.ListenAndServe(address, handler)
+		_ = http.ListenAndServe(bindAddress, handler)
 	}
 }
