@@ -1,6 +1,9 @@
 # WatchParty
 Join a theater and watch your favourite movies or videos together, and clap along.
 
+## Dependencies
+This project requires `go` and `npm` to build, and `ffmpeg` during runtime.
+
 ## Build
 First build the client, using the following
 ```
