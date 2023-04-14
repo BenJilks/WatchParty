@@ -18,12 +18,13 @@ type Config struct {
 	ImagesPath     string
 	ThumbnailsPath string
 
-	webserver.WebServerConfig
+	WebServerConfig webserver.Config
 }
 
 func defaultConfig() Config {
-	webserverConfig := webserver.DefaultWebServerConfig()
+	webserverConfig := webserver.DefaultConfig()
 	webserverConfig.StaticFilesPath = DefaultStaticFilesPath
+	webserverConfig.ServerName = "watch-party"
 
 	return Config{
 		LogLevel: "info",
@@ -97,7 +98,7 @@ func fileConfig(filePath string, config Config) Config {
 		ImagesPath:      mediaSection.Key("images").MustString(config.ImagesPath),
 		VideosPath:      mediaSection.Key("videos").MustString(config.VideosPath),
 		ThumbnailsPath:  mediaSection.Key("thumbnails").MustString(config.ThumbnailsPath),
-		WebServerConfig: webserver.FileWebServerConfig(configFile, config.WebServerConfig),
+		WebServerConfig: webserver.FileConfig(configFile, config.WebServerConfig),
 	}
 }
 
@@ -110,7 +111,7 @@ func commandLineConfig(config Config) Config {
 	imagesPath := flag.String("images", config.ImagesPath, "Path to images")
 	thumbnailsPath := flag.String("thumbnails", config.ThumbnailsPath, "Path to thumbnails")
 
-	webserverConfig := webserver.CommandLineWebServerConfig(config.WebServerConfig)
+	webserverConfig := webserver.CommandLineConfig(config.WebServerConfig)
 	return Config{
 		LogLevel: *logLevel,
 
@@ -136,8 +137,12 @@ func main() {
 
 	clients := make(chan Client)
 	serverMessages := make(chan ServerMessage)
-
-	go StartSocketServer(config.WebServerConfig, clients)
 	go StartServer(db, serverMessages)
-	ListenForNewClients(clients, serverMessages)
+	go ListenForNewClients(clients, serverMessages)
+
+	webHandler := webserver.Handler(config.WebServerConfig)
+	connectionHandler := ConnectionHandler(clients, webHandler)
+	if err := webserver.Listen(config.WebServerConfig, connectionHandler); err != nil {
+		log.Fatal(err)
+	}
 }
