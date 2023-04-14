@@ -3,7 +3,7 @@ module watch-party
 go 1.20
 
 require (
-	github.com/benjilks/tinywebserver v0.0.2
+	github.com/benjilks/tinywebserver v0.0.3
 	github.com/sirupsen/logrus v1.9.0
 	github.com/u2takey/ffmpeg-go v0.4.1
 	gorm.io/driver/sqlite v1.4.4
@@ -23,4 +23,4 @@ require (
 	gopkg.in/ini.v1 v1.67.0 // indirect
 )
 
-replace github.com/benjilks/tinywebserver v0.0.2 => ./tiny-web-server
+replace github.com/benjilks/tinywebserver v0.0.3 => ./tiny-web-server

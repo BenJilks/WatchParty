@@ -1,5 +1,4 @@
 [submodule "server/tiny-web-server"]
 	path = server/tiny-web-server
 	url = git@github.com:BenJilks/TinyWebServer.git
-	branch = v0.0.2
 
