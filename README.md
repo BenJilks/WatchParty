@@ -5,12 +5,7 @@ Join a theater and watch your favourite movies or videos together, and clap alon
 This project requires `go` and `npm` to build, and `ffmpeg` during runtime.
 
 ## Build
-All submodules need to be initialized first. You can do this with the command:
-```
-    $ git submodule update --init --recursive
-```
-
-Then, build the Vue based client with npm.
+First, build the Vue based client with npm.
 ```
     $ cd client
     $ npm run install
