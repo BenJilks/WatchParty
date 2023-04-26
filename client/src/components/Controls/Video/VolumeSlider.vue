@@ -7,7 +7,7 @@ interface Emits {
 }
 const emit = defineEmits<Emits>()
 
-const volume = ref(getCookieNumber("volume") ?? 0.5)
+const volume = ref(0)
 const muted = ref(false)
 const over_slider = ref(false)
 const volume_bar_ref = ref<HTMLDivElement | null>(null)
@@ -27,6 +27,11 @@ function mouse_leave() {
 }
 
 function set_volume(value: number) {
+    if (muted.value && value == 0) {
+        return
+    }
+
+    muted.value = false
     volume.value = Math.min(Math.max(value, 0), 1)
     setCookie('volume', volume.value.toString())
     emit('volume_change', volume.value)
@@ -37,7 +42,6 @@ function mouse_wheel(event: WheelEvent) {
         return
     }
 
-    muted.value = false
     set_volume(volume.value - event.deltaY * 0.0005)
 }
 
@@ -45,8 +49,6 @@ window.addEventListener('mousemove', (event: MouseEvent) => {
     if (volume_bar_ref.value == null || event.buttons != 1) {
         return
     }
-    is_dragging.value = true
-    muted.value = false
 
     const volume_bar = volume_bar_ref.value
     const rect = volume_bar.getBoundingClientRect()
@@ -54,14 +56,25 @@ window.addEventListener('mousemove', (event: MouseEvent) => {
     set_volume(1 - y)
 })
 
+window.addEventListener('mousedown', () => {
+    if (over_slider.value) {
+        is_dragging.value = true
+    }
+})
+
 window.addEventListener('mouseup', () => {
     is_dragging.value = false
 })
 
+const initial_volume = getCookieNumber("volume") ?? 0.5
+set_volume(initial_volume)
+
 const show_slider = computed(() => over_slider.value || is_dragging.value)
 defineExpose({
-    show_slider,
+    is_open: show_slider,
+    volume: volume.value ?? initial_volume,
 })
+
 </script>
 
 <template>

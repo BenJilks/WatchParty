@@ -45,6 +45,7 @@ watch(props.video, async () => {
     const video = props.video.value!!
     const screen = props.screen.value!!
     synced_video = new SyncedVideo(client, video, screen, ref(playback_data))
+    volume_change(volume.value?.volume)
 
     // NOTE: Ensure there's only ever a single interval
     clearInterval(buffer_updater.value)
@@ -68,7 +69,7 @@ function on_seek_start() {
 }
 
 function volume_change(volume: number) {
-    synced_video?.change_volume(volume)
+    synced_video?.change_volume(volume * volume)
 }
 
 window.addEventListener('mouseup', async () => {
@@ -128,7 +129,7 @@ const time_text = computed(() =>
     `${ format_time(playback_data.progress) } / ${ format_time(playback_data.duration) }`)
 
 const volume = ref<typeof VolumeSlider>()
-const volume_slider_open = () => volume.value?.show_slider
+const volume_slider_open = () => volume.value?.is_open
 const get_is_seeking = () => is_seeking
 
 defineExpose({
