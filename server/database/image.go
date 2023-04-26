@@ -98,7 +98,7 @@ func ScanForNewFileImages(
 		return
 	}
 
-	err := filepath.WalkDir(imagesPath, func(filePath string, info fs.DirEntry, err error) error {
+	err := filepath.WalkDir(imagesPath+"/", func(filePath string, info fs.DirEntry, err error) error {
 		if err != nil || info.IsDir() {
 			return nil
 		}

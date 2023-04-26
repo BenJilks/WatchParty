@@ -126,7 +126,7 @@ func ScanForNewFileVideos(
 		return
 	}
 
-	err := filepath.WalkDir(videosPath, func(filePath string, info fs.DirEntry, err error) error {
+	err := filepath.WalkDir(videosPath+"/", func(filePath string, info fs.DirEntry, err error) error {
 		if err != nil || info.IsDir() {
 			return nil
 		}
