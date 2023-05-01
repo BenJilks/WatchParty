@@ -24,5 +24,5 @@ Or build a binary for distribution.
 Use the `-help` command line option on the server for configuring.
 
 ## Screenshot
-![WatchParty](https://i.ibb.co/HxJ6hbW/screenshot.png)
+![WatchParty](https://raw.githubusercontent.com/BenJilks/WatchParty/master/docs/screenshot.png)
 
